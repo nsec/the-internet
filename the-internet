@@ -1,0 +1,134 @@
+#!/usr/bin/python3
+
+import argparse
+import lxc
+import os
+import subprocess
+import sys
+
+
+class Error(Exception):
+    pass
+
+
+def execute(container, cmd, cwd="/"):
+    def run_command(args):
+        cmd, cwd = args
+
+        os.environ['PATH'] = '/usr/sbin:/usr/bin:/sbin:/bin'
+        os.environ['HOME'] = '/root'
+
+        return subprocess.call(cmd, cwd=cwd)
+
+    if isinstance(cmd, str):
+        rootfs = container.get_config_item("lxc.rootfs")
+        cmdpath = "%s/tmp/exec_script" % rootfs
+        with open(cmdpath, "w+") as fd:
+            fd.write(cmd)
+        os.chmod(cmdpath, 0o755)
+        cmd = ["/tmp/exec_script"]
+
+    print(" ==> Executing: \"%s\" in %s" % (" ".join(cmd), cwd))
+    retval = container.attach_wait(run_command,
+                                   (cmd, cwd),
+                                   env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
+
+    if retval != 0:
+        raise Error("Failed to run the command.")
+
+
+def create_container(args):
+    container = lxc.Container(args.name)
+
+    if container.defined:
+        raise Error("Container '%s' already exists." % args.name)
+
+    print(" ==> Creating container: %s" % args.name)
+    container.create("download", 0, {'dist': "ubuntu",
+                                     'release': "trusty",
+                                     'arch': "amd64"})
+
+    print(" ==> Configuring the container")
+    container.set_config_item("lxc.aa_profile", "unconfined")
+    container.set_config_item("lxc.mount.auto", "cgroup:mixed")
+    container.save_config()
+
+    print(" ==> Starting the container")
+    container.start()
+
+    print(" ==> Waiting for the network to be up")
+    ips = container.get_ips(timeout=30, family="inet")
+    if not ips:
+        raise Error("No IP address after 30s.")
+
+    print(" ==> Installing the required packages")
+    execute(container, ["apt-get", "update"])
+    execute(container, ["apt-get", "dist-upgrade", "-y"])
+    execute(container, ["apt-get", "install", "lxc", "-y"])
+
+    def create_sub_container():
+        print(" ==> Creating a router template sub-container")
+        os.environ['PATH'] = '/usr/sbin:/usr/bin:/sbin:/bin'
+        os.environ['HOME'] = '/root'
+
+        sub_container = lxc.Container("tpl-router", "/var/lib/lxc/")
+        sub_container.load_config("/etc/lxc/default.conf")
+        sub_container.create("download", 0, {'dist': "ubuntu",
+                                             'release': "trusty",
+                                             'arch': "amd64"})
+
+        print(" ==> Starting the sub-container")
+        sub_container.start()
+
+        print(" ==> Waiting for the network to be up")
+        ips = sub_container.get_ips(timeout=30, family="inet")
+        if not ips:
+            raise Error("No IP address after 30s.")
+
+        print(" ==> Installing the required packages")
+        execute(sub_container, ["apt-get", "update"])
+        execute(sub_container, ["apt-get", "dist-upgrade", "-y"])
+        execute(sub_container, ["apt-get", "install", "quagga", "-y"])
+
+    container.attach_wait(create_sub_container,
+                          env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
+
+
+def destroy_container(args):
+    container = lxc.Container(args.name)
+
+    if not container.defined:
+        raise Error("Container '%s' doesn't exist." % args.name)
+
+    if container.running:
+        print(" ==> Stopping the container")
+        container.stop()
+
+    print(" ==> Destroying container: %s" % args.name)
+    container.destroy()
+
+
+parser = argparse.ArgumentParser(description="Internet generator")
+subparsers = parser.add_subparsers()
+
+parser_create = subparsers.add_parser("create", help="Create a new Internet")
+parser_create.add_argument("--name", "-n", metavar="NAME", dest="name",
+                           default="the-internet")
+parser_create.set_defaults(func=create_container)
+
+parser_destroy = subparsers.add_parser("destroy", help="Destroy an Internet")
+parser_destroy.add_argument("--name", "-n", metavar="NAME", dest="name",
+                            default="the-internet")
+parser_destroy.set_defaults(func=destroy_container)
+
+
+args = parser.parse_args()
+
+if not hasattr(args, "func"):
+    parser.print_help()
+    sys.exit(1)
+
+try:
+    args.func(args)
+except Error as e:
+    parser.error(e)
