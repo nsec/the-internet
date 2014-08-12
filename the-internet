@@ -1,14 +1,443 @@
 #!/usr/bin/python3
 
 import argparse
+import csv
 import lxc
+import netaddr
 import os
+import random
+import shutil
+import sqlite3
 import subprocess
 import sys
 
 
+class InternetDB():
+    def __init__(self, project_path):
+        self.con = sqlite3.connect(':memory:')
+        self.project_path = project_path
+
+    def init_tables(self):
+        cur = self.con.cursor()
+        cur.execute("DROP TABLE IF EXISTS router")
+        cur.execute("CREATE TABLE router (id INT, name TEXT, gps TEXT, "
+                    "fqdn TEXT, lxcname TEXT, asn INT, internal INT, "
+                    "tier INT, prefix TEXT, required INT)")
+        self.read_routers_csv(cur)
+
+        cur.execute("DROP TABLE IF EXISTS links")
+        cur.execute("CREATE TABLE links (id INT, left TEXT, right TEXT, "
+                    "mac_left TEXT, mac_right TEXT, left_prio INT, "
+                    "right_prio INT, latency INT, speed INT)")
+        self.import_links_csv(cur)
+
+        cur.execute("DROP TABLE IF EXISTS dns")
+        cur.execute("CREATE TABLE dns (ipv6 TEXT, name TEXT)")
+        self.import_dns_csv(cur)
+
+    def import_links_csv(self, cur):
+        with open(os.path.join(self.project_path, "Links.csv"),
+                  'r') as csvfile:
+            reader = csv.reader(csvfile)
+            first = 1
+            linkid = 0
+            for row in reader:
+                # skip first line
+                if first == 1:
+                    first = 0
+                    continue
+
+                # skip empty lines
+                if not row[0]:
+                    continue
+
+                cur.execute("select lxcname from router "
+                            "where lxcname=:name", {"name": row[0]})
+                rtr = cur.fetchall()
+                if not rtr:
+                    print("Wrong left router name", row[0])
+
+                cur.execute("select lxcname from router "
+                            "where lxcname=:name", {"name": row[1]})
+                rtr = cur.fetchall()
+                if not rtr:
+                    print("Wrong right router name", row[1])
+
+                # csv: Left, Right, Mac Left, Mac Right, Left priority,
+                #      Right priority, Latency, Speed
+
+                # db: id, left, right, mac_left, mac_right, left_prio,
+                #     right_prio, latency, speed
+                cur.execute("INSERT INTO links VALUES(?,?,?,?,?,?,?,?,?)",
+                            (linkid, row[0], row[1], row[2], row[3], row[4],
+                             row[5], row[6], row[7]))
+                linkid += 1
+
+    def read_routers_csv(self, cur):
+        routerid = 0
+        with open(os.path.join(self.project_path, "Telco.csv"),
+                  'r') as csvfile:
+            reader = csv.reader(csvfile)
+            first = 1
+            for row in reader:
+                # skip first line
+                if first == 1:
+                    first = 0
+                    continue
+
+                # skip empty lines
+                if not row[0]:
+                    continue
+
+                # csv: Name-0, FQDN-1, Lxc-name-2, Tier-3, Prefix-4, ASN-5,
+                #      Internal-6, GPS-7
+
+                # db: id, name, gps, fqdn, lxcname, asn, internal, tier, prefix
+                cur.execute("INSERT INTO router VALUES(?,?,?,?,?,?,?,?,?,?)",
+                            (routerid, row[0], row[7], row[1], row[2], row[5],
+                             row[6], row[3], row[4], row[8]))
+                routerid += 1
+
+        with open(os.path.join(self.project_path, "Routers.csv"),
+                  'r') as csvfile:
+            reader = csv.reader(csvfile)
+            first = 1
+            for row in reader:
+                # skip first line
+                if first == 1:
+                    first = 0
+                    continue
+
+                # skip empty lines
+                if not row[0]:
+                    continue
+
+                # csv: Name-0, Country-1, GPS-2, Prefix-3, FQDN-4, Subnet-5
+                #      Lxc-name-6
+
+                # db: id, name, gps, fqdn, lxcname, uplink, asn, internal,
+                #     tier, prefix
+                cur.execute("INSERT INTO router VALUES(?,?,?,?,?,?,?,?,?,?)",
+                            (routerid, row[0], row[2], row[4], row[6], "",
+                             0, 4, row[5], row[9]))
+                routerid += 1
+
+    def import_dns_csv(self, cur):
+        with open(os.path.join(self.project_path, "DNS.csv"), 'r') as csvfile:
+            reader = csv.reader(csvfile)
+            first = 1
+            for row in reader:
+                # skip first line
+                if first == 1:
+                    first = 0
+                    continue
+
+                # skip lines with empty or invalid fields
+                if not row[0] or not row[1] or row[1][0] == "(":
+                    continue
+
+                # csv: ipv6-0, name-1, lxc-name-2
+                # db: ipv6, name
+                cur.execute("INSERT INTO dns VALUES(?,?)",
+                            (row[0].strip(), row[1].strip()))
+
+
 class Error(Exception):
     pass
+
+
+def gen_interfaces(cur, rtrlxcname, rtrid, rtrprefix,
+                   rtrtier, rtrfqdn):
+    os.mkdir("config/%s/etc/network/" % rtrlxcname)
+    random.seed(rtrid)
+    ip = netaddr.ip
+    strprefix = "%s:%s:%d:%d:%d:%d" % (
+        rtrprefix, "dead:beef", random.randint(0, 4095),
+        random.randint(0, 4095), random.randint(0, 4095),
+        random.randint(0, 4095))
+    ipv6 = str(ip.IPAddress(strprefix).ipv6())
+
+    with open("config/%s/etc/network/interfaces" % rtrlxcname, "w") as fd:
+        fd.write("""auto lo
+iface lo inet loopback
+    post-up ip -6 addr add dev lo %s/128
+""" % (ipv6))
+
+        for link in get_links(cur, rtrlxcname, True):
+            fd.write("""#    post-up tc qdisc add dev %s root netem """
+                     """delay %dms\n""" % (link['iface'], link['latency']))
+        if rtrtier != 3:
+            return
+
+        for link in get_links(cur, rtrlxcname, True):
+            if not link['right_prefix']:
+                print("Missing peer for link: %s", link['id'])
+
+            if link['right_tier'] == 4:
+                a = netaddr.EUI(link['mac_right'])
+                fd.write("""
+auto %s
+iface %s inet6 manual
+    post-up ip -6 route add dev %s %s via %s
+""" % (
+                    link['iface'], link['iface'], link['iface'],
+                    link['right_prefix'], a.ipv6_link_local()))
+
+
+def gen_zebra(rtrlxcname):
+    os.mkdir("config/%s/etc/quagga/" % rtrlxcname)
+    with open("config/%s/etc/quagga/zebra.conf" % rtrlxcname, "w") as fd:
+        fd.write("""hostname %s
+password zebra%d
+enable password zebra%d\n""" % (rtrlxcname, random.randint(9999, 99999999),
+                                random.randint(9999, 99999999)))
+
+
+def get_router_data(cur, name):
+    rtr = {}
+    cur.execute("select id, name, gps, fqdn, lxcname, asn, internal, tier, "
+                "prefix from router where lxcname=:name", {"name": name})
+    r = cur.fetchone()
+    rtr["id"], rtr["name"], rtr["gps"], rtr["fqdn"], rtr["lxcname"], \
+        rtr["asn"], rtr["internal"], rtr["tier"], rtr["prefix"] = r
+    return rtr
+
+
+def get_links(cur, rtrlxcname, show_all=False):
+    linklist = []
+    cur.execute("select id,left,right,mac_left,mac_right,left_prio,"
+                "right_prio,latency,speed from links where left=:name",
+                {"name": rtrlxcname})
+    for l in cur.fetchall():
+        link = {}
+        link["id"], link["left"], link["right"], link["mac_left"], \
+            link["mac_right"], link["left_prio"], link["right_prio"], \
+            link["latency"], link["speed"] = l
+        r = get_router_data(cur, link["right"])
+        if r["asn"] != "" or show_all:
+            link["right_asn"] = r["asn"]
+            link["right_tier"] = r["tier"]
+            link["right_prefix"] = r["prefix"]
+            link["iface"] = "veth-%d-1" % link["id"]
+            linklist.append(link)
+
+    cur.execute("select id,right,left,mac_right,mac_left,right_prio,"
+                "left_prio,latency,speed from links where right=:name",
+                {"name": rtrlxcname})
+    for l in cur.fetchall():
+        link = {}
+        link["id"], link["right"], link["left"], link["mac_left"], \
+            link["mac_right"], link["left_prio"], link["right_prio"], \
+            link["latency"], link["speed"] = l
+        r = get_router_data(cur, link["left"])
+        if r["asn"] != "" or show_all:
+            link["right_asn"] = r["asn"]
+            link["right_tier"] = r["tier"]
+            link["right_prefix"] = r["prefix"]
+            link["iface"] = "veth-%d-2" % link["id"]
+            linklist.append(link)
+
+    return sorted(linklist, key=lambda link: link['id'])
+
+
+def gen_bgpd(cur, rtrlxcname, rtrid, rtrasn):
+    linklist = get_links(cur, rtrlxcname)
+    ip = netaddr.ip
+    rtridv4 = str(ip.IPAddress(rtrid).ipv4())
+    if rtridv4 == "0.0.0.0":
+        rtridv4 = "123.123.123.123"
+
+    with open("config/%s/etc/quagga/bgpd.conf" % rtrlxcname, "w") as fd:
+        fd.write("""hostname %s
+password zebra%d
+
+router bgp %s
+ bgp router-id %s
+ no bgp default ipv4-unicast\n""" % (rtrlxcname,
+                                     random.randint(9999, 99999999),
+                                     rtrasn, rtridv4))
+        weight = 10
+        for l in linklist:
+            mac = netaddr.EUI(l["mac_right"])
+            ll = str(mac.ipv6_link_local())
+            l["link-local"] = ll
+            fd.write(" neighbor %s remote-as %s\n" % (ll, l["right_asn"]))
+            fd.write("! neighbor %s weight %d\n" % (ll, weight))
+            fd.write(" neighbor %s interface %s\n\n" % (ll, l["iface"]))
+            weight += 10
+        fd.write(" address-family ipv6\n")
+        for l in linklist:
+            fd.write("  neighbor %s activate\n" % l["link-local"])
+        fd.write("  redistribute connected\n")
+        fd.write("  redistribute kernel\n")
+        fd.write(" exit-address-family\n")
+
+
+def gen_hosts(rtrlxcname):
+    with open("config/%s/etc/hosts" % rtrlxcname, "w") as fd:
+        fd.write("""127.0.0.1    localhost
+127.0.1.1    %s
+
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback localhost
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters\n""" % rtrlxcname)
+
+
+def gen_hostname(rtrlxcname):
+    with open("config/%s/etc/hostname" % rtrlxcname, "w") as fd:
+        fd.write("%s\n" % rtrlxcname)
+
+
+def gen_setup_script(cur, rtrs, startgroup):
+    cur.execute("select id from links")
+    links = cur.fetchall()
+    if not links:
+        return
+
+    with open("config/setup.sh", "w+") as fd:
+        fd.write("#!/bin/sh\n")
+
+        fd.write("lxc-autostart -g routers0 -k\n")
+        fd.write("lxc-autostart -g routers1 -k\n")
+        fd.write("lxc-autostart -g routers2 -k\n")
+        fd.write("/etc/init.d/quagga stop\n")
+        fd.write("rm -Rf /nsec/delta\n\n")
+        fd.write("rm -f /var/lib/lxc/bgp-*\n\n")
+
+        for (linkid,) in links:
+            fd.write("ip link add name veth-%s-1 type veth "
+                     "peer name veth-%s-2 2>/dev/null\n" %
+                     (linkid, linkid))
+
+        fd.write("\n")
+
+        for rtr in rtrs:
+            if rtr == "legacy" or not rtr.startswith("bgp-"):
+                continue
+
+            fd.write("ln -s /nsec/config/%s /var/lib/lxc/%s\n" %
+                     (rtr, rtr))
+            fd.write("mkdir -p /nsec/overlay/%s\n" % rtr)
+
+        fd.write("\n")
+        for link in get_links(cur, "legacy", True):
+            fd.write("ip link set dev %s address %s\n" % (link['iface'],
+                                                          link['mac_left']))
+            fd.write("ip link set dev %s up\n" % link['iface'])
+
+        fd.write("\n/etc/init.d/quagga start\n")
+        fd.write("lxc-autostart -g routers%d\n" % startgroup)
+
+
+def gen_lxc_config(cur, rtrlxcname, rtrgroup):
+    with open("config/%s/config" % (rtrlxcname), "w+") as fd:
+        fd.write("""# Auto-generated, do not manually edit.
+
+# Distribution configuration
+lxc.include = /usr/share/lxc/config/ubuntu.common.conf
+lxc.include = /usr/share/lxc/config/ubuntu.userns.conf
+lxc.arch = amd64
+
+# Container specific configuration
+lxc.rootfs = overlayfs:/var/lib/lxc/tpl-quagga/rootfs:/nsec/overlay/%s
+lxc.utsname = %s
+
+""" % (rtrlxcname, rtrlxcname))
+        for path in ("etc/hostname", "etc/hosts", "etc/network/interfaces",
+                     "etc/quagga/bgpd.conf", "etc/quagga/zebra.conf"):
+            fd.write("lxc.mount.entry = /nsec/config/%s/%s %s none bind\n" %
+                     (rtrlxcname, path, path))
+
+        fd.write("""
+# Auto-start
+lxc.start.auto = 1
+lxc.group = routers%d
+
+# Network configuration
+""" % rtrgroup)
+
+        for link in get_links(cur, rtrlxcname, True):
+            fd.write("""lxc.network.type = phys
+lxc.network.flags = up
+lxc.network.name = %s
+lxc.network.link = %s
+lxc.network.hwaddr = %s
+
+""" % (link['iface'], link['iface'], link['mac_left']))
+
+
+def gen_config(database, startgroup=0):
+    cur = database.cursor()
+    cur.execute("select * from router")
+    rtrs = cur.fetchall()
+    if not rtrs:
+        sys.exit(1)
+
+    gen_setup_script(cur, [rtr[4] for rtr in rtrs], startgroup)
+    # id, name, gps, fqdn, lxcname, asn, internal, tier, prefix32, required
+    for rtr in rtrs:
+        rtrid = rtr[0]
+        rtrlxcname = rtr[4]
+        rtrasn = rtr[5]
+        rtrtier = rtr[7]
+        rtrprefix = rtr[8].split("/")[0][0:9]
+        rtrgroup = rtr[9]
+        rtrfqdn = rtr[3]
+
+        if rtrtier == 4:
+            continue
+        try:
+            shutil.rmtree("config/%s" % rtrlxcname)
+        except:
+            pass
+        os.mkdir("config/%s" % rtrlxcname)
+        os.mkdir("config/%s/etc/" % rtrlxcname)
+        gen_zebra(rtrlxcname)
+        gen_bgpd(cur, rtrlxcname, rtrid, rtrasn)
+        if rtrlxcname != "legacy":
+            gen_interfaces(cur, rtrlxcname, rtrid, rtrprefix, rtrtier,
+                           rtrfqdn)
+            gen_hosts(rtrlxcname)
+            gen_hostname(rtrlxcname)
+            gen_lxc_config(cur, rtrlxcname, rtrgroup)
+
+
+def gen_dns(database):
+    cur = database.cursor()
+    cur.execute("select * from dns")
+    records = cur.fetchall()
+
+    if records:
+        for record in records:
+            print("%s. AAAA %s" % (record[1], record[0]))
+            rdns = netaddr.IPAddress(record[0]).reverse_dns
+            print("%s PTR %s." % (rdns, record[1]))
+
+    cur.execute("select * from router")
+    records = cur.fetchall()
+
+    if records:
+        for record in records:
+            rtrid = record[0]
+            rtrfqdn = record[3]
+            rtrprefix = record[8].split("/")[0][0:9]
+
+            if not rtrfqdn or not rtrprefix:
+                continue
+
+            random.seed(rtrid)
+            strprefix = "%s:%s:%d:%d:%d:%d" % (
+                rtrprefix, "dead:beef", random.randint(0, 4095),
+                random.randint(0, 4095), random.randint(0, 4095),
+                random.randint(0, 4095))
+            ipv6 = str(netaddr.ip.IPAddress(strprefix).ipv6())
+
+            print("%s. AAAA %s" % (rtrfqdn, ipv6))
+            rdns = netaddr.IPAddress(ipv6).reverse_dns
+            print("%s PTR %s." % (rdns, rtrfqdn))
 
 
 def execute(container, cmd, cwd="/"):
@@ -37,6 +466,14 @@ def execute(container, cmd, cwd="/"):
         raise Error("Failed to run the command.")
 
 
+def start(container):
+    container.start()
+
+    ips = container.get_ips(timeout=30, family="inet")
+    if not ips:
+        raise Error("No IP address after 30s.")
+
+
 def create_container(args):
     container = lxc.Container(args.name)
 
@@ -54,12 +491,7 @@ def create_container(args):
     container.save_config()
 
     print(" ==> Starting the container")
-    container.start()
-
-    print(" ==> Waiting for the network to be up")
-    ips = container.get_ips(timeout=30, family="inet")
-    if not ips:
-        raise Error("No IP address after 30s.")
+    start(container)
 
     print(" ==> Installing the required packages")
     execute(container, ["apt-get", "update"])
@@ -78,17 +510,13 @@ def create_container(args):
                                              'arch': "amd64"})
 
         print(" ==> Starting the sub-container")
-        sub_container.start()
-
-        print(" ==> Waiting for the network to be up")
-        ips = sub_container.get_ips(timeout=30, family="inet")
-        if not ips:
-            raise Error("No IP address after 30s.")
+        start(sub_container)
 
         print(" ==> Installing the required packages")
         execute(sub_container, ["apt-get", "update"])
         execute(sub_container, ["apt-get", "dist-upgrade", "-y"])
-        execute(sub_container, ["apt-get", "install", "quagga", "-y"])
+        execute(sub_container, ["apt-get", "install", "quagga",
+                                "iputils-tracepath", "mtr-tiny", "-y"])
 
     container.attach_wait(create_sub_container,
                           env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
@@ -108,6 +536,73 @@ def destroy_container(args):
     container.destroy()
 
 
+def update_container(args):
+    container = lxc.Container(args.name)
+
+    if not container.defined:
+        raise Error("Container '%s' doesn't exist." % args.name)
+
+    if not container.running:
+        print(" ==> Starting the container")
+        start(container)
+
+    print(" ==> Updating the container")
+    execute(container, ["apt-get", "update"])
+    execute(container, ["apt-get", "dist-upgrade", "-y"])
+
+    def update_sub_container():
+        os.environ['PATH'] = '/usr/sbin:/usr/bin:/sbin:/bin'
+        os.environ['HOME'] = '/root'
+
+        sub_container = lxc.Container("tpl-router", "/var/lib/lxc/")
+
+        if not sub_container.defined:
+            raise Error("Sub-container '%s' doesn't exist." % args.name)
+
+        if not sub_container.running:
+            print(" ==> Starting the router template sub-container")
+            start(sub_container)
+
+        print(" ==> Updating the router template sub-container")
+        execute(sub_container, ["apt-get", "update"])
+        execute(sub_container, ["apt-get", "dist-upgrade", "-y"])
+
+    container.attach_wait(update_sub_container,
+                          env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
+
+
+def start_simulation(args):
+    container = lxc.Container(args.name)
+
+    if not container.defined:
+        raise Error("Container '%s' doesn't exist." % args.name)
+
+    if not container.running:
+        print(" ==> Starting the container")
+        start(container)
+
+    project_path = os.path.join("input", args.project)
+    if not os.path.exists(project_path):
+        raise Error("Project '%s' doesn't exist." % args.project)
+
+    print(" ==> Loading project: %s" % args.project)
+    database = InternetDB(project_path)
+    database.init_tables()
+
+    print(" ==> Flushing existing configuration")
+    # Stop all containers
+    # Stop dnsmasq
+    # Wipe /internet
+
+    print(" ==> Generating new configuration")
+    gen_config(database.con)
+
+    print(" ==> Starting DNS server")
+#    gen_dns(database.con)
+
+    print(" ==> Starting the routers")
+
+
 parser = argparse.ArgumentParser(description="Internet generator")
 subparsers = parser.add_subparsers()
 
@@ -116,10 +611,22 @@ parser_create.add_argument("--name", "-n", metavar="NAME", dest="name",
                            default="the-internet")
 parser_create.set_defaults(func=create_container)
 
-parser_destroy = subparsers.add_parser("destroy", help="Destroy an Internet")
+parser_update = subparsers.add_parser("update", help="Update the Internet")
+parser_update.add_argument("--name", "-n", metavar="NAME", dest="name",
+                           default="the-internet")
+parser_update.set_defaults(func=update_container)
+
+parser_destroy = subparsers.add_parser("destroy", help="Destroy the Internet")
 parser_destroy.add_argument("--name", "-n", metavar="NAME", dest="name",
                             default="the-internet")
 parser_destroy.set_defaults(func=destroy_container)
+
+parser_start = subparsers.add_parser("start", help="Start the simulation")
+parser_start.add_argument("--name", "-n", metavar="NAME", dest="name",
+                          default="the-internet")
+parser_start.add_argument("--project", "-p", metavar="PROJECT", dest="project",
+                          default="NorthSec 2014")
+parser_start.set_defaults(func=start_simulation)
 
 
 args = parser.parse_args()
