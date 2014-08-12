@@ -1,0 +1,246 @@
+Name,FQDN,Lxc-name,Tier,Prefix (/32),ASN,Internal,GPS (Long/Lat),Required
+OpenFace,legacynet.openface.intl.ctf,legacy,0,9000:0000::/32,1,,59.340467/18.058863,0
+Level1 Communications,core.denver.level3.level2.level1.net.ctf,bgp-levelone01,1,9000:1249::/32,2200,,39.73814/-104.98535,1
+Level1 Communications,core.seatle.level3.level2.level1.net.ctf,bgp-levelone02,1,9000:1249::/32,2201,,47.60635/-122.33242,1
+Level1 Communications,core.la.level3.level2.level1.net.ctf,bgp-levelone03,1,9000:1249::/32,2202,,34.05169/-118.24413,1
+Level1 Communications,core.sf.level3.level2.level1.net.ctf,bgp-levelone04,1,9000:1249::/32,2203,,37.77430/-122.42065,1
+Level1 Communications,core.dallas.level3.level2.level1.net.ctf,bgp-levelone05,1,9000:1249::/32,2204,,32.78104/-96.79642,0
+Level1 Communications,core.chicago.level3.level2.level1.net.ctf,bgp-levelone06,1,9000:1249::/32,2205,,41.87835/-87.63245,0
+Level1 Communications,core.ny.level3.level2.level1.net.ctf,bgp-levelone07,1,9000:1249::/32,2206,,40.71427/-74.00597,0
+Level1 Communications,core.tor.level3.level2.level1.net.ctf,bgp-levelone08,1,9000:1249::/32,2207,,43.67192/-79.37691,0
+Level1 Communications,core.vancouver.level3.level2.level1.net.ctf,bgp-levelone09,1,9000:1249::/32,2208,,49.24746/-123.10867,1
+Level1 Communications,core.mexico.level3.level2.level1.net.ctf,bgp-levelone10,1,9000:1249::/32,2209,,19.43137/-99.13513,0
+Level1 Communications,core.london.level3.level2.level1.net.ctf,bgp-levelone11,1,9000:1249::/32,2210,,51.50870/-0.12600,1
+Level1 Communications,core.ams.level3.level2.level1.net.ctf,bgp-levelone12,1,9000:1249::/32,2211,,52.37097/4.89278,0
+Level1 Communications,core.berlin.level3.level2.level1.net.ctf,bgp-levelone13,1,9000:1249::/32,2212,,52.52149/13.40744,1
+Level1 Communications,core.stockholm.level3.level2.level1.net.ctf,bgp-levelone14,1,9000:1249::/32,2213,,59.340467/18.058863,0
+TornadoPneumatic,pop01.freemont.tp.net.ctf,bgp-tp01,1,9000:0061::/32,2300,,37.527226/-121.997337,1
+TornadoPneumatic,pop4.la.tp.net.ctf,bgp-tp02,1,9000:0061::/32,2301,,34.05169/-118.24413,1
+TornadoPneumatic,pop9.sf.tp.net.ctf,bgp-tp03,1,9000:0061::/32,2302,,37.77430/-122.42065,1
+TornadoPneumatic,pop1.portland.tp.net.ctf,bgp-tp04,1,9000:0061::/32,2303,,45.52299/-122.67952,1
+TornadoPneumatic,pop8.seatle.tp.net.ctf,bgp-tp05,1,9000:0061::/32,2304,,47.60635/-122.33242,1
+TornadoPneumatic,pop2.slc.tp.net.ctf,bgp-tp06,1,9000:0061::/32,2305,,40.75797/-111.89781,1
+TornadoPneumatic,pop4.winnipeg.tp.net.ctf,bgp-tp07,1,9000:0061::/32,2306,,49.90100/-97.13287,1
+TornadoPneumatic,pop1.minneapolis.tp.net.ctf,bgp-tp08,1,9000:0061::/32,2307,,44.98195/-93.26946,0
+TornadoPneumatic,pop9.chicago.tp.net.ctf,bgp-tp09,1,9000:0061::/32,2308,,41.87835/-87.63245,0
+TornadoPneumatic,pop3.st-louis.tp.net.ctf,bgp-tp10,1,9000:0061::/32,2309,,38.62932/-90.20325,1
+TornadoPneumatic,pop4.miami.tp.net.ctf,bgp-tp11,1,9000:0061::/32,2310,,25.79470/-80.21187,0
+TornadoPneumatic,pop8.washington.tp.net.ctf,bgp-tp12,1,9000:0061::/32,2311,,38.89762/-77.03651,0
+TornadoPneumatic,pop1.toronto.tp.net.ctf,bgp-tp13,1,9000:0061::/32,2312,,43.67192/-79.37691,1
+TornadoPneumatic,pop8.ny.tp.net.ctf,bgp-tp14,1,9000:0061::/32,2313,,40.71427/-74.00597,0
+TornadoPneumatic,pop9.boston.tp.net.ctf,bgp-tp15,1,9000:0061::/32,2314,,42.34597/-71.07124,1
+TornadoPneumatic,po7.london.tp.net.ctf,bgp-tp16,1,9000:0061::/32,2315,,51.50870/-0.12600,0
+TornadoPneumatic,pop7.ams.tp.net.ctf,bgp-tp17,1,9000:0061::/32,2316,,52.37097/4.89278,0
+TornadoPneumatic,pop6.stockholm.tp.net.ctf,bgp-tp18,1,9000:0061::/32,2317,,59.340467/18.058863,1
+TornadoPneumatic,pop11.zurich.tp.net.ctf,bgp-tp19,1,9000:0061::/32,2318,,47.36641/8.53899,0
+TornadoPneumatic,pop42.moscow.tp.net.ctf,bgp-tp20,1,9000:0061::/32,2319,,55.74943/37.61169,0
+TornadoPneumatic,pop12.kiev.tp.net.ctf,bgp-tp21,1,9000:0061::/32,2320,,50.45614/30.52826,1
+TornadoPneumatic,pop10.berlin.tp.net.ctf,bgp-tp22,1,9000:0061::/32,2321,,52.52149/13.40744,1
+Toto Communications,gw.mumbai.toto.in.ctf,bgp-toto01,1,9000:1328::/32,2400,,19.07484/72.88261,0
+Toto Communications,gw.goa.toto.in.ctf,bgp-toto02,1,9000:1328::/32,2401,,15.252743/73.936615,1
+Toto Communications,gw.hyderabad.toto.in.ctf,bgp-toto03,1,9000:1328::/32,2402,,17.36342/78.47534,1
+Toto Communications,gw.bangalore.toto.in.ctf,bgp-toto04,1,9000:1328::/32,2403,,12.88076/77.58545,1
+Toto Communications,gw.kathmandu.toto.in.ctf,bgp-toto05,1,9000:1328::/32,2404,,27.67973/85.33630,0
+Toto Communications,gw.yangon.toto.in.ctf,bgp-toto06,1,9000:1328::/32,2405,,16.77940/96.14685,0
+Toto Communications,gw.bangkok.toto.in.ctf,bgp-toto07,1,9000:1328::/32,2406,,13.72721/100.53040,0
+Toto Communications,gw.kualalumpur.toto.in.ctf,bgp-toto08,1,9000:1328::/32,2407,,3.13837/101.69220,1
+Toto Communications,gw.singapore.toto.in.ctf,bgp-toto09,1,9000:1328::/32,2408,,1.28368/103.82655,0
+Toto Communications,gw.macao.toto.in.ctf,bgp-toto10,1,9000:1328::/32,2409,,22.20852/113.54851,0
+Toto Communications,gw.hongkong.toto.in.ctf,bgp-toto11,1,9000:1328::/32,2410,,22.28062/114.15679,0
+Toto Communications,gw.taiwan.toto.in.ctf,bgp-toto12,1,9000:1328::/32,2411,,25.07086/121.51617,1
+Toto Communications,gw.shanghai.toto.in.ctf,bgp-toto13,1,9000:1328::/32,2412,,31.22598/121.47446,0
+Toto Communications,gw.beijing.toto.in.ctf,bgp-toto14,1,9000:1328::/32,2413,,39.89458/116.39397,0
+Toto Communications,gw.seoul.toto.in.ctf,bgp-toto15,1,9000:1328::/32,2414,,37.54529/126.94204,0
+Toto Communications,gw.busan.toto.in.ctf,bgp-toto16,1,9000:1328::/32,2415,,35.18007/129.07863,1
+Toto Communications,gw.nagasaki.toto.in.ctf,bgp-toto17,1,9000:1328::/32,2416,,32.74790/129.87780,1
+Toto Communications,gw.hiroshima.toto.in.ctf,bgp-toto18,1,9000:1328::/32,2417,,34.39122/132.44139,1
+Toto Communications,gw.kyoto.toto.in.ctf,bgp-toto19,1,9000:1328::/32,2418,,35.01516/135.76595,1
+Toto Communications,gw.tokyo.toto.in.ctf,bgp-toto20,1,9000:1328::/32,2419,,35.68543/139.72549,1
+Toto Communications,gw.fukushima.toto.in.ctf,bgp-toto21,1,9000:1328::/32,2420,,37.76076/140.47866,1
+Toto Communications,gw.karachi.toto.in.ctf,bgp-toto22,1,9000:1328::/32,2421,,24.86975/67.02003,0
+Toto Communications,gw.dubai.toto.in.ctf,bgp-toto23,1,9000:1328::/32,2422,,25.27283/55.30535,0
+Toto Communications,gw.doha.toto.in.ctf,bgp-toto24,1,9000:1328::/32,2423,,25.28329/51.52287,0
+Toto Communications,gw.jerusalem.toto.in.ctf,bgp-toto25,1,9000:1328::/32,2424,,31.76940/35.21221,0
+Toto Communications,gw.antalya.toto.in.ctf,bgp-toto26,1,9000:1328::/32,2425,,36.88767/30.70670,0
+Toto Communications,gw.istanbul.toto.in.ctf,bgp-toto27,1,9000:1328::/32,2426,,41.00467/28.97558,0
+Toto Communications,gw.bukarest.toto.in.ctf,bgp-toto28,1,9000:1328::/32,2427,,44.43065/26.10249,0
+Toto Communications,gw.kiev.toto.in.ctf,bgp-toto29,1,9000:1328::/32,2428,,50.45614/30.52826,0
+Toto Communications,gw.zurich.toto.in.ctf,bgp-toto30,1,9000:1328::/32,2429,,47.36641/8.53899,0
+Toto Communications,gw.berlin.toto.in.ctf,bgp-toto31,1,9000:1328::/32,2430,,52.52149/13.40744,1
+Ring,core01.yyz.ringtel.ca.ctf,bgp-ring01,2,9000:4846::/32,2000,,43.67192/-79.37691,1
+Ring,core02.ywg.ringtel.ca.ctf,bgp-ring02,2,9000:4846::/32,2001,,49.90100/-97.13287,1
+Ring,core03.yyc.ringtel.ca.ctf,bgp-ring03,2,9000:4846::/32,2002,,51.05918/-114.06693,1
+Ring,core04.yvr.ringtel.ca.ctf,bgp-ring04,2,9000:4846::/32,2003,,49.24746/-123.10867,1
+Ring,core05.yul.ringtel.ca.ctf,bgp-ring05,2,9000:4846::/32,2004,,45.46908/-73.54051,1
+VideoPacMan,gw01.mtl.videopacman.net.ctf,bgp-pacman01,2,9000:4950::/32,2100,,45.46908/-73.54051,1
+VideoPacMan,gw01.qc.videopacman.net.ctf,bgp-pacman02,2,9000:4950::/32,2101,,46.78133/-71.26316,1
+VideoPacMan,gw01.sherb.videopacman.net.ctf,bgp-pacman03,2,9000:4950::/32,2102,,45.39853/-71.89608,1
+VideoPacMan,gw01.tor.videopacman.net.ctf,bgp-pacman04,2,9000:4950::/32,2103,,43.67192/-79.37691,0
+LevelEast,core01.beijing.leveleast.cn.ctf,bgp-le01,2,9000:0048::/32,2600,,39.89458/116.39397,0
+LevelEast,core01.datong.leveleast.cn.ctf,bgp-le02,2,9000:0048::/32,2601,,40.07479/113.30750,1
+LevelEast,core01.baoding.leveleast.cn.ctf,bgp-le03,2,9000:0048::/32,2602,,38.87914/115.47180,0
+LevelEast,core01.ordos.leveleast.cn.ctf,bgp-le04,2,9000:0048::/32,2603,,39.57698/109.80286,1
+LevelEast,core01.changzhi.leveleast.cn.ctf,bgp-le05,2,9000:0048::/32,2604,,36.17876/113.12073,1
+LevelEast,core01.xian.leveleast.cn.ctf,bgp-le06,2,9000:0048::/32,2605,,34.33082/108.95691,0
+LevelEast,core01.wuhan.leveleast.cn.ctf,bgp-le07,2,9000:0048::/32,2606,,30.58694/114.31824,0
+LevelEast,core01.chongqing.leveleast.cn.ctf,bgp-le08,2,9000:0048::/32,2607,,29.48952/106.55640,1
+LevelEast,core01.chengdu.leveleast.cn.ctf,bgp-le09,2,9000:0048::/32,2608,,30.49809/104.11743,1
+LevelEast,core01.shanghai.leveleast.cn.ctf,bgp-le10,2,9000:0048::/32,2609,,31.22598/121.47446,0
+734.net,gw01.xian.734.net.ctf,bgp-73401,2,9000:5017::/32,2700,,34.33082/108.95691,2
+734.net,gw01.chongqing.734.net.ctf,bgp-73402,2,9000:5017::/32,2701,,29.48952/106.55640,2
+734.net,gw01.wuhan.734.net.ctf,bgp-73403,2,9000:5017::/32,2702,,30.58694/114.31824,2
+734.net,gw01.ganzhou.734.net.ctf,bgp-73404,2,9000:5017::/32,2703,,25.79216/114.94995,2
+734.net,gw01.guangzhou.734.net.ctf,bgp-73405,2,9000:5017::/32,2704,,23.11818/113.27179,2
+734.net,gw01.shenzhen.734.net.ctf,bgp-73406,2,9000:5017::/32,2705,,22.53087/114.05731,2
+734.net,gw01.macao.734.net.ctf,bgp-73407,2,9000:5017::/32,2706,,22.20852/113.54851,2
+734.net,gw01.hongkong.734.net.ctf,bgp-73408,2,9000:5017::/32,2707,,22.28062/114.15679,2
+Gruyere,core01.geneva.gruyere.ch.ctf,bgp-gruyere01,2,9000:5128::/32,2900,,46.21087/6.13466,0
+Gruyere,core01.lausanne.gruyere.ch.ctf,bgp-gruyere02,2,9000:5128::/32,2901,,46.51853/6.64089,0
+Gruyere,core01.bern.gruyere.ch.ctf,bgp-gruyere03,2,9000:5128::/32,2902,,47.57060/7.59911,0
+Gruyere,core01.sion.gruyere.ch.ctf,bgp-gruyere04,2,9000:5128::/32,2903,,46.23144/7.36324,1
+Gruyere,core01.lucerne.gruyere.ch.ctf,bgp-gruyere05,2,9000:5128::/32,2904,,47.04621/8.32489,1
+Gruyere,core01.basel.gruyere.ch.ctf,bgp-gruyere06,2,9000:5128::/32,2905,,47.57060/7.59911,0
+Gruyere,core01.zurich.gruyere.ch.ctf,bgp-gruyere07,2,9000:5128::/32,2906,,47.36641/8.53899,0
+Gruyere,core01.lugano.gruyere.ch.ctf,bgp-gruyere08,2,9000:5128::/32,2907,,46.00692/8.95660,1
+Gruyere,core01.winterthur.gruyere.ch.ctf,bgp-gruyere09,2,9000:5128::/32,2908,,47.49349/8.74237,1
+Sbrinz,rtr01.basel.sbrinz.ch.ctf,bgp-sbrinz01,2,9000:5872::/32,3000,,47.57060/7.59911,1
+Sbrinz,rtr01.zurich.sbrinz.ch.ctf,bgp-sbrinz02,2,9000:5872::/32,3001,,47.36641/8.53899,0
+Sbrinz,rtr01.lucerne.sbrinz.ch.ctf,bgp-sbrinz03,2,9000:5872::/32,3002,,47.04621/8.32489,1
+Sbrinz,rtr01.winterthur.sbrinz.ch.ctf,bgp-sbrinz04,2,9000:5872::/32,3003,,47.49349/8.74237,1
+Sbrinz,rtr01.thun.sbrinz.ch.ctf,bgp-sbrinz05,2,9000:5872::/32,3004,,46.74592/7.62726,1
+Sbrinz,rtr01.chur.sbrinz.ch.ctf,bgp-sbrinz06,2,9000:5872::/32,3005,,46.85121/9.53339,1
+Sbrinz,rtr01.stgallen.sbrinz.ch.ctf,bgp-sbrinz07,2,9000:5872::/32,3006,,47.42664/9.36310,1
+Sbrinz,rtr01.davos.sbrinz.ch.ctf,bgp-sbrinz08,2,9000:5872::/32,3007,,46.79483/9.83551,1
+Marathon,run01.baby.run.chicago.marathon.com.ctf,bgp-marathon01,2,9000:0607::/32,1600,,41.87835/-87.63245,1
+Marathon,run01.baby.run.minneapolis.marathon.com.ctf,bgp-marathon02,2,9000:0607::/32,1601,,44.98195/-93.26946,0
+Marathon,run01.baby.run.jamestown.marathon.com.ctf,bgp-marathon03,2,9000:0607::/32,1602,,46.91129/-98.69843,0
+Marathon,run01.baby.run.kansas.marathon.com.ctf,bgp-marathon04,2,9000:0607::/32,1603,,39.09985/-94.58731,1
+Marathon,run01.baby.run.memphis.marathon.com.ctf,bgp-marathon05,2,9000:0607::/32,1604,,35.11289/-90.03296,1
+Marathon,run01.baby.run.nashville.marathon.com.ctf,bgp-marathon06,2,9000:0607::/32,1605,,36.14869/-86.75903,1
+Marathon,run01.baby.run.raleigh.marathon.com.ctf,bgp-marathon07,2,9000:0607::/32,1606,,35.77521/-78.60718,1
+Marathon,run01.baby.run.columbus.marathon.com.ctf,bgp-marathon08,2,9000:0607::/32,1607,,32.40982/-84.97925,0
+Marathon,run01.baby.run.washington.marathon.com.ctf,bgp-marathon09,2,9000:0607::/32,1608,,38.89762/-77.03651,0
+Marathon,run01.baby.run.miami.marathon.com.ctf,bgp-marathon10,2,9000:0607::/32,1609,,25.79470/-80.21187,0
+BT&C,core50.gw.dallas.btc.net.ctf,bgp-btc01,2,9000:0091::/32,1700,,32.78104/-96.79642,1
+BT&C,core50.gw.kansas.btc.net.ctf,bgp-btc02,2,9000:0091::/32,1701,,39.09985/-94.58731,1
+BT&C,core50.gw.memphis.btc.net.ctf,bgp-btc03,2,9000:0091::/32,1702,,35.11289/-90.03296,1
+BT&C,core50.gw.neworleans.btc.net.ctf,bgp-btc04,2,9000:0091::/32,1703,,29.94170/-90.07141,1
+BT&C,core50.gw.houston.btc.net.ctf,bgp-btc05,2,9000:0091::/32,1704,,29.74158/-95.36682,1
+BT&C,core50.gw.austin.btc.net.ctf,bgp-btc06,2,9000:0091::/32,1705,,30.25165/-97.72339,1
+BT&C,core50.gw.albuquerque.btc.net.ctf,bgp-btc07,2,9000:0091::/32,1706,,35.05895/-106.55640,1
+BT&C,core50.gw.phoenix.btc.net.ctf,bgp-btc08,2,9000:0091::/32,1707,,33.42428/-112.04956,1
+BT&C,core50.gw.denver.btc.net.ctf,bgp-btc09,2,9000:0091::/32,1708,,39.73814/-104.98535,1
+BT&C,core50.gw.lasvegas.btc.net.ctf,bgp-btc10,2,9000:0091::/32,1709,,36.05298/-115.15869,1
+BT&C,core50.gw.slc.btc.net.ctf,bgp-btc11,2,9000:0091::/32,1710,,40.75797/-111.89781,1
+BT&C,core50.gw.boise.btc.net.ctf,bgp-btc12,2,9000:0091::/32,1711,,43.59009/-116.18042,1
+BT&C,core50.gw.losangeles.btc.net.ctf,bgp-btc13,2,9000:0091::/32,1712,,34.05169/-118.24413,1
+Mayo Group,gw.ketchup.mexico.mayo.com.ctf,bgp-ketchup01,2,9000:1855::/32,1800,,19.43137/-99.13513,0
+Mayo Group,gw.ketchup.guatemala.mayo.com.ctf,bgp-ketchup02,2,9000:1855::/32,1801,,14.61872/-90.52460,0
+Mayo Group,gw.ketchup.tegucigalpa.mayo.com.ctf,bgp-ketchup03,2,9000:1855::/32,1802,,14.07589/-87.21222,0
+Mayo Group,gw.ketchup.managua.mayo.com.ctf,bgp-ketchup04,2,9000:1855::/32,1803,,12.13181/-86.23718,0
+Mayo Group,gw.ketchup.cartago.mayo.com.ctf,bgp-ketchup05,2,9000:1855::/32,1804,,9.85310/-83.92181,0
+Mayo Group,gw.ketchup.panama.mayo.com.ctf,bgp-ketchup06,2,9000:1855::/32,1805,,8.97851/-79.50256,0
+Mayo Group,gw.ketchup.bogota.mayo.com.ctf,bgp-ketchup07,2,9000:1855::/32,1806,,4.49121/-74.01489,0
+Mayo Group,gw.ketchup.caracas.mayo.com.ctf,bgp-ketchup08,2,9000:1855::/32,1807,,10.39294/-66.89575,2
+Mayo Group,gw.ketchup.quito.mayo.com.ctf,bgp-ketchup09,2,9000:1855::/32,1808,,-0.31620/-78.49731,0
+Mayo Group,gw.ketchup.lima.mayo.com.ctf,bgp-ketchup10,2,9000:1855::/32,1809,,-12.09908/-77.01416,0
+Mayo Group,gw.ketchup.santiago.mayo.com.ctf,bgp-ketchup11,2,9000:1855::/32,1810,,-33.46252/-70.64758,0
+Global Smoke Signal,rtr01.mexico.gss.net.ctf,bgp-gss01,2,9000:0400::/32,700,,19.43137/-99.13513,2
+Global Smoke Signal,rtr01.managua.gss.net.ctf,bgp-gss02,2,9000:0400::/32,701,,12.13181/-86.23718,2
+Global Smoke Signal,rtr01.panama.gss.net.ctf,bgp-gss03,2,9000:0400::/32,702,,8.97851/-79.50256,2
+Global Smoke Signal,rtr01.qito.gss.net.ctf,bgp-gss04,2,9000:0400::/32,703,,-0.31620/-78.49731,2
+Global Smoke Signal,rtr01.caracas.gss.net.ctf,bgp-gss05,2,9000:0400::/32,704,,10.39294/-66.89575,2
+Global Smoke Signal,rtr01.manaus.gss.net.ctf,bgp-gss06,2,9000:0400::/32,705,,-3.17960/-59.96338,2
+Global Smoke Signal,rtr01.brasilia.gss.net.ctf,bgp-gss07,2,9000:0400::/32,706,,-15.85105/-47.79053,2
+Global Smoke Signal,rtr01.rio.gss.net.ctf,bgp-gss08,2,9000:0400::/32,707,,-22.93373/-43.13232,2
+Global Smoke Signal,rtr01.saopaulo.gss.net.ctf,bgp-gss09,2,9000:0400::/32,708,,-23.61999/-46.60400,2
+Global Smoke Signal,rtr01.portoalegre.gss.net.ctf,bgp-gss10,2,9000:0400::/32,709,,-30.04592/-51.17432,2
+Global Smoke Signal,rtr01.buenosaires.gss.net.ctf,bgp-gss11,2,9000:0400::/32,710,,-34.68348/-58.33740,2
+Global Smoke Signal,rtr01.santiago.gss.net.ctf,bgp-gss12,2,9000:0400::/32,711,,-33.46252/-70.64758,2
+Flag telecom,core01.kiev.flag.net.ctf,bgp-flag01,2,9000:6477::/32,3100,,50.45614/30.52826,0
+Flag telecom,core01.minsk.flag.net.ctf,bgp-flag02,2,9000:6477::/32,3101,,53.86832/27.61963,0
+Flag telecom,core01.warsaw.flag.net.ctf,bgp-flag03,2,9000:6477::/32,3102,,52.20382/21.07178,1
+Flag telecom,core01.krakov.flag.net.ctf,bgp-flag04,2,9000:6477::/32,3103,,49.99671/19.97314,1
+Flag telecom,core01.budapest.flag.net.ctf,bgp-flag05,2,9000:6477::/32,3104,,47.47591/19.09424,1
+Flag telecom,core01.prague.flag.net.ctf,bgp-flag06,2,9000:6477::/32,3105,,50.02495/14.47998,1
+Flag telecom,core01.bucarest.flag.net.ctf,bgp-flag07,2,9000:6477::/32,3106,,44.43065/26.10249,1
+Flag telecom,core01.berlin.flag.net.ctf,bgp-flag08,2,9000:6477::/32,3107,,52.52149/13.40744,1
+Flag telecom,core01.moscow.flag.net.ctf,bgp-flag09,2,9000:6477::/32,3108,,55.74943/37.61169,0
+Flag telecom,core01.istanbul.flag.net.ctf,bgp-flag10,2,9000:6477::/32,3109,,41.00467/28.97558,1
+Swedish sink,stockholm01.ikea.sw.ctf,bgp-swedish01,2,9000:0913::/32,1000,,59.340467/18.058863,1
+Swedish sink,copenhagen01.ikea.sw.ctf,bgp-swedish02,2,9000:0913::/32,1001,,55.64311/12.59033,1
+Swedish sink,helsinki01.ikea.sw.ctf,bgp-swedish03,2,9000:0913::/32,1002,,60.14390/24.98291,1
+Swedish sink,stpetersburg01.ikea.sw.ctf,bgp-swedish04,2,9000:0913::/32,1003,,48.79556/2.43896,1
+Swedish sink,moscow01.ikea.sw.ctf,bgp-swedish05,2,9000:0913::/32,1004,,55.74943/37.61169,1
+Swedish sink,minsk01.ikea.sw.ctf,bgp-swedish06,2,9000:0913::/32,1005,,53.86832/27.61963,1
+Swedish sink,berlin01.ikea.sw.ctf,bgp-swedish07,2,9000:0913::/32,1006,,52.52149/13.40744,1
+Swedish sink,cologne01.ikea.sw.ctf,bgp-swedish08,2,9000:0913::/32,1007,,50.91992/7.00928,1
+Swedish sink,paris01.ikea.sw.ctf,bgp-swedish09,2,9000:0913::/32,1008,,48.79556/2.43896,1
+Swedish sink,london01.ikea.sw.ctf,bgp-swedish10,2,9000:0913::/32,1009,,51.50870/-0.12600,1
+Swedish sink,kiev01.ikea.sw.ctf,bgp-swedish11,2,9000:0913::/32,1010,,50.45614/30.52826,1
+Nationnal lambda rail,gw01.karachi.nlrail.net.ctf,bgp-nlrail01,2,9000:6478::/32,3200,,24.86975/67.02003,0
+Nationnal lambda rail,gw01.multan.nlrail.net.ctf,bgp-nlrail02,2,9000:6478::/32,3201,,30.17570/71.48804,0
+Nationnal lambda rail,gw01.kabul.nlrail.net.ctf,bgp-nlrail03,2,9000:6478::/32,3202,,34.47430/69.23584,0
+Nationnal lambda rail,gw01.tehran.nlrail.net.ctf,bgp-nlrail04,2,9000:6478::/32,3203,,35.62549/51.52588,0
+Nationnal lambda rail,gw01.baghdad.nlrail.net.ctf,bgp-nlrail05,2,9000:6478::/32,3204,,33.27027/44.45068,0
+Nationnal lambda rail,gw01.jerusalem.nlrail.net.ctf,bgp-nlrail06,2,9000:6478::/32,3205,,31.76940/35.21221,0
+GangnamSpeed,op01.op.oppa.seoul.ggs.kr.ctf,bgp-ggs01,2,9000:0031::/32,100,,37.54529/126.94204,0
+GangnamSpeed,op02.op.oppa.suwon.ggs.kr.ctf,bgp-ggs02,2,9000:0031::/32,101,,37.25486/127.03217,1
+GangnamSpeed,op03.op.oppa.cheonan.ggs.kr.ctf,bgp-ggs03,2,9000:0031::/32,102,,36.81196/127.12006,1
+GangnamSpeed,op04.op.oppa.daegu.ggs.kr.ctf,bgp-ggs04,2,9000:0031::/32,103,,35.86506/128.60321,1
+GangnamSpeed,op05.op.oppa.busan.ggs.kr.ctf,bgp-ggs05,2,9000:0031::/32,104,,35.18007/129.07863,1
+Falsizon Business,sw01.seoul.rightison.bizz.net.ctf,bgp-fb01,2,9000:0482::/32,800,,37.54529/126.94204,1
+Falsizon Business,sw02.daejon.rightison.bizz.net.ctf,bgp-fb02,2,9000:0482::/32,801,,36.34880/127.38922,1
+Falsizon Business,sw03.gwanju.rightison.bizz.net.ctf,bgp-fb03,2,9000:0482::/32,802,,35.14335/126.87561,1
+Falsizon Business,sw04.jinju.rightison.bizz.net.ctf,bgp-fb04,2,9000:0482::/32,803,,35.16132/128.12805,1
+Falsizon Business,sw05.busan.rightison.bizz.net.ctf,bgp-fb05,2,9000:0482::/32,804,,35.18007/129.07863,1
+51th state of Merica,core01.tor.rednet.net.ctf,bgp-51merica01,3,9000:3201::/32,3800,,43.67192/-79.37691,0
+51th state of Merica,nun01.mtl.rednet.net.ctf,bgp-51merica02,3,9000:3201::/32,3801,,45.46908/-73.54051,0
+51th state of Merica,gov01.ottawa.rednet.net.ctf,bgp-51merica03,3,9000:3201::/32,3802,,45.41057/-75.69305,1
+rao's exquisite hosting of the people,gov.you.shall.not.pass.greatwall.cn.ctf,bgp-rao01,3,9000:0006::/32,2500,,36.61821/101.78009,0
+rao's exquisite hosting of the people,core01.you.shall.not.pass.greatwall.cn.ctf,bgp-rao02,3,9000:0006::/32,2501,,36.05625/103.84003,0
+rao's exquisite hosting of the people,core02.you.shall.not.pass.greatwall.cn.ctf,bgp-rao03,3,9000:0006::/32,2502,,34.33082/108.95691,0
+Raclette,fondue01.geneva.raclette.ch.ctf,bgp-raclette01,3,9000:2927::/32,2800,,46.21087/6.13466,0
+Raclette,fondue01.lausanne.raclette.ch.ctf,bgp-raclette02,3,9000:2927::/32,2801,,46.51853/6.64089,0
+Raclette,fondue01.fribourg.raclette.ch.ctf,bgp-raclette03,3,9000:2927::/32,2802,,46.80129/7.13802,1
+Raclette,fondue01.neuchatel.raclette.ch.ctf,bgp-raclette04,3,9000:2927::/32,2805,,46.99459/6.91692,1
+Merica,a.merica.fidel.slurp.gov.net.ctf,bgp-merica01,3,9000:2612::/32,1500,,19.91503/-75.14297,0
+Merica,a.merica.miami.slurp.gov.net.ctf,bgp-merica02,3,9000:2612::/32,1501,,25.79470/-80.21187,0
+Merica,a.merica.quantico.slurp.gov.net.ctf,bgp-merica03,3,9000:2612::/32,1502,,38.54825/-77.32890,0
+Merica,a.merica.washington.slurp.gov.net.ctf,bgp-merica04,3,9000:2612::/32,1503,,38.89762/-77.03651,0
+Merica,a.merica.jamestown.slurp.gov.net.ctf,bgp-merica05,3,9000:2612::/32,1504,,46.91129/-98.69843,0
+Merica,a.merica.minneapolis.slurp.gov.net.ctf,bgp-merica06,3,9000:2612::/32,1505,,44.98195/-93.26946,0
+Con Carne,gw01.sanfernando.con.carne.com.ctf,bgp-concarne01,3,9000:3753::/32,3500,,-34.60314/-70.98610,0
+Con Carne,gw01.rancuaga.con.carne.com.ctf,bgp-concarne02,3,9000:3753::/32,3501,,-34.15317/-70.73341,0
+Con Carne,gw01.santiago.con.carne.com.ctf,bgp-concarne03,3,9000:3753::/32,3502,,-33.46252/-70.64758,0
+Demokratik Republik of Auskev,gw01.nuclear.auskev.kev.ru.ctf,bgp-auskev01,3,9000:2407::/32,1400,,51.24484/30.17120,0
+Demokratik Republik of Auskev,gw01.kiev.auskev.kev.ru.ctf,bgp-auskev02,3,9000:2407::/32,1401,,50.45614/30.52826,0
+Durkakistan Telekom,route01.gov.durkaisp.net.ctf,bgp-durka01,3,9000:2251::/32,1300,,30.37288/69.32373,0
+Durkakistan Telekom,route02.multan.durkaisp.net.ctf,bgp-durka02,3,9000:2251::/32,1301,,30.17570/71.48804,0
+Durkakistan Telekom,route03.karachi.durkaisp.net.ctf,bgp-durka03,3,9000:2251::/32,1302,,24.86975/67.02003,0
+GangnamISP,gw28.fission.subnet.ggs.kr.ctf,bgp-ggisp01,3,9000:3792::/32,1900,,37.76055/128.89469,0
+GangnamISP,gw28.wonju.subnet.ggs.kr.ctf,bgp-ggisp02,3,9000:3792::/32,1901,,37.34003/127.93871,0
+GangnamISP,gw28.seoul.subnet.ggs.kr.ctf,bgp-ggisp03,3,9000:3792::/32,1902,,37.54529/126.94204,0
+One internet per child Communications,core01.capetown.its-green.olpc.net.ctf,bgp-oipcc01,2,9000:0231::/32,600,,-33.88467/18.52295,2
+One internet per child Communications,core01.windhoek.its-green.olpc.net.ctf,bgp-oipcc02,2,9000:0231::/32,601,,-22.56107/17.10571,2
+One internet per child Communications,core01.luanda.its-green.olpc.net.ctf,bgp-oipcc03,2,9000:0231::/32,602,,-8.94544/13.33740,2
+One internet per child Communications,core01.libreville.its-green.olpc.net.ctf,bgp-oipcc04,2,9000:0231::/32,603,,0.42228/9.51416,2
+One internet per child Communications,core01.lagos.its-green.olpc.net.ctf,bgp-oipcc05,2,9000:0231::/32,604,,6.36853/3.47168,2
+One internet per child Communications,core01.bamako.its-green.olpc.net.ctf,bgp-oipcc06,2,9000:0231::/32,605,,12.60684/-7.95410,2
+One internet per child Communications,core01.dakar.its-green.olpc.net.ctf,bgp-oipcc07,2,9000:0231::/32,606,,14.74168/-17.18262,2
+One internet per child Communications,core01.casablanca.its-green.olpc.net.ctf,bgp-oipcc08,2,9000:0231::/32,607,,33.32938/-7.42676,2
+One internet per child Communications,core01.tunis.its-green.olpc.net.ctf,bgp-oipcc09,2,9000:0231::/32,608,,36.78179/10.23926,2
+One internet per child Communications,core01.cairo.its-green.olpc.net.ctf,bgp-oipcc10,2,9000:0231::/32,609,,29.88709/31.42090,2
+One internet per child Communications,core01.jerusalem.its-green.olpc.net.ctf,bgp-oipcc11,2,9000:0231::/32,610,,31.76940/35.21221,2
+One internet per child Communications,core01.khartoum.its-green.olpc.net.ctf,bgp-oipcc12,2,9000:0231::/32,611,,15.52184/32.58545,2
+One internet per child Communications,core01.juba.its-green.olpc.net.ctf,bgp-oipcc13,2,9000:0231::/32,612,,4.76736/31.66260,2
+One internet per child Communications,core01.nairobi.its-green.olpc.net.ctf,bgp-oipcc14,2,9000:0231::/32,613,,-1.37934/36.84814,2
+One internet per child Communications,core01.lusaka.its-green.olpc.net.ctf,bgp-oipcc15,2,9000:0231::/32,614,,-15.47023/28.27881,2
+One internet per child Communications,core01.pretoria.its-green.olpc.net.ctf,bgp-oipcc16,2,9000:0231::/32,615,,-25.73620/28.23486,2
+One internet per child Communications,core01.durban.its-green.olpc.net.ctf,bgp-oipcc17,2,9000:0231::/32,616,,-29.85553/30.95947,2
+M8 telecom,rtr-sydney01.gday.m8.net.ctf,bgp-mate01,2,9000:6574::/32,3300,,-33.97184/151.30371,2
+M8 telecom,rtr-melbourne01.gday.m8.net.ctf,bgp-mate02,2,9000:6574::/32,3301,,-37.81521/145.06348,2
+M8 telecom,rtr-perth01.gday.m8.net.ctf,bgp-mate03,2,9000:6574::/32,3302,,-32.13027/115.88379,2
+M8 telecom,rtr-brisbane01.gday.m8.net.ctf,bgp-mate04,2,9000:6574::/32,3303,,-27.55820/153.06152,2
+M8 telecom,rtr-auckland01.gday.m8.net.ctf,bgp-mate05,2,9000:6574::/32,3304,,-36.90708/174.85840,2
+M8 telecom,rtr-singapore01.gday.m8.net.ctf,bgp-mate06,2,9000:6574::/32,3305,,1.28368/103.82655,2
