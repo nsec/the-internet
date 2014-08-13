@@ -147,8 +147,8 @@ class Error(Exception):
 
 
 def gen_interfaces(cur, rtrlxcname, rtrid, rtrprefix,
-                   rtrtier, rtrfqdn):
-    os.mkdir("config/%s/etc/network/" % rtrlxcname)
+                   rtrtier, rtrfqdn, target):
+    os.mkdir("%s/%s/etc/network/" % (target, rtrlxcname))
     random.seed(rtrid)
     ip = netaddr.ip
     strprefix = "%s:%s:%d:%d:%d:%d" % (
@@ -157,7 +157,8 @@ def gen_interfaces(cur, rtrlxcname, rtrid, rtrprefix,
         random.randint(0, 4095))
     ipv6 = str(ip.IPAddress(strprefix).ipv6())
 
-    with open("config/%s/etc/network/interfaces" % rtrlxcname, "w") as fd:
+    with open("%s/%s/etc/network/interfaces" %
+              (target, rtrlxcname), "w") as fd:
         fd.write("""auto lo
 iface lo inet loopback
     post-up ip -6 addr add dev lo %s/128
@@ -184,9 +185,9 @@ iface %s inet6 manual
                     link['right_prefix'], a.ipv6_link_local()))
 
 
-def gen_zebra(rtrlxcname):
-    os.mkdir("config/%s/etc/quagga/" % rtrlxcname)
-    with open("config/%s/etc/quagga/zebra.conf" % rtrlxcname, "w") as fd:
+def gen_zebra(rtrlxcname, target):
+    os.mkdir("%s/%s/etc/quagga/" % (target, rtrlxcname))
+    with open("%s/%s/etc/quagga/zebra.conf" % (target, rtrlxcname), "w") as fd:
         fd.write("""hostname %s
 password zebra%d
 enable password zebra%d\n""" % (rtrlxcname, random.randint(9999, 99999999),
@@ -240,14 +241,14 @@ def get_links(cur, rtrlxcname, show_all=False):
     return sorted(linklist, key=lambda link: link['id'])
 
 
-def gen_bgpd(cur, rtrlxcname, rtrid, rtrasn):
+def gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, target):
     linklist = get_links(cur, rtrlxcname)
     ip = netaddr.ip
     rtridv4 = str(ip.IPAddress(rtrid).ipv4())
     if rtridv4 == "0.0.0.0":
         rtridv4 = "123.123.123.123"
 
-    with open("config/%s/etc/quagga/bgpd.conf" % rtrlxcname, "w") as fd:
+    with open("%s/%s/etc/quagga/bgpd.conf" % (target, rtrlxcname), "w") as fd:
         fd.write("""hostname %s
 password zebra%d
 
@@ -273,8 +274,8 @@ router bgp %s
         fd.write(" exit-address-family\n")
 
 
-def gen_hosts(rtrlxcname):
-    with open("config/%s/etc/hosts" % rtrlxcname, "w") as fd:
+def gen_hosts(rtrlxcname, target):
+    with open("%s/%s/etc/hosts" % (target, rtrlxcname), "w") as fd:
         fd.write("""127.0.0.1    localhost
 127.0.1.1    %s
 
@@ -286,18 +287,18 @@ ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters\n""" % rtrlxcname)
 
 
-def gen_hostname(rtrlxcname):
-    with open("config/%s/etc/hostname" % rtrlxcname, "w") as fd:
+def gen_hostname(rtrlxcname, target):
+    with open("%s/%s/etc/hostname" % (target, rtrlxcname), "w") as fd:
         fd.write("%s\n" % rtrlxcname)
 
 
-def gen_setup_script(cur, rtrs, startgroup):
+def gen_setup_script(cur, rtrs, startgroup, target):
     cur.execute("select id from links")
     links = cur.fetchall()
     if not links:
         return
 
-    with open("config/setup.sh", "w+") as fd:
+    with open("%s/setup.sh" % target, "w+") as fd:
         fd.write("#!/bin/sh\n")
 
         fd.write("lxc-autostart -g routers0 -k\n")
@@ -332,8 +333,8 @@ def gen_setup_script(cur, rtrs, startgroup):
         fd.write("lxc-autostart -g routers%d\n" % startgroup)
 
 
-def gen_lxc_config(cur, rtrlxcname, rtrgroup):
-    with open("config/%s/config" % (rtrlxcname), "w+") as fd:
+def gen_lxc_config(cur, rtrlxcname, rtrgroup, target):
+    with open("%s/%s/config" % (target, rtrlxcname), "w+") as fd:
         fd.write("""# Auto-generated, do not manually edit.
 
 # Distribution configuration
@@ -369,14 +370,14 @@ lxc.network.hwaddr = %s
 """ % (link['iface'], link['iface'], link['mac_left']))
 
 
-def gen_config(database, startgroup=0):
+def gen_config(database, target, startgroup=0):
     cur = database.cursor()
     cur.execute("select * from router")
     rtrs = cur.fetchall()
     if not rtrs:
         sys.exit(1)
 
-    gen_setup_script(cur, [rtr[4] for rtr in rtrs], startgroup)
+    gen_setup_script(cur, [rtr[4] for rtr in rtrs], startgroup, target)
     # id, name, gps, fqdn, lxcname, asn, internal, tier, prefix32, required
     for rtr in rtrs:
         rtrid = rtr[0]
@@ -390,22 +391,22 @@ def gen_config(database, startgroup=0):
         if rtrtier == 4:
             continue
         try:
-            shutil.rmtree("config/%s" % rtrlxcname)
+            shutil.rmtree("%s/%s" % (target, rtrlxcname))
         except:
             pass
-        os.mkdir("config/%s" % rtrlxcname)
-        os.mkdir("config/%s/etc/" % rtrlxcname)
-        gen_zebra(rtrlxcname)
-        gen_bgpd(cur, rtrlxcname, rtrid, rtrasn)
+        os.mkdir("%s/%s" % (target, rtrlxcname))
+        os.mkdir("%s/%s/etc/" % (target, rtrlxcname))
+        gen_zebra(rtrlxcname, target)
+        gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, target)
         if rtrlxcname != "legacy":
             gen_interfaces(cur, rtrlxcname, rtrid, rtrprefix, rtrtier,
-                           rtrfqdn)
-            gen_hosts(rtrlxcname)
-            gen_hostname(rtrlxcname)
-            gen_lxc_config(cur, rtrlxcname, rtrgroup)
+                           rtrfqdn, target)
+            gen_hosts(rtrlxcname, target)
+            gen_hostname(rtrlxcname, target)
+            gen_lxc_config(cur, rtrlxcname, rtrgroup, target)
 
 
-def gen_dns(database):
+def gen_dns(database, target):
     cur = database.cursor()
     cur.execute("select * from dns")
     records = cur.fetchall()
@@ -589,18 +590,28 @@ def start_simulation(args):
     database = InternetDB(project_path)
     database.init_tables()
 
-    print(" ==> Flushing existing configuration")
-    # Stop all containers
-    # Stop dnsmasq
-    # Wipe /internet
+    def reset_project():
+        os.environ['PATH'] = '/usr/sbin:/usr/bin:/sbin:/bin'
+        os.environ['HOME'] = '/root'
 
-    print(" ==> Generating new configuration")
-    gen_config(database.con)
+        print(" ==> Flushing existing configuration")
+        # Stop all containers
+        # Stop dnsmasq
+        # Wipe /internet
+        if os.path.exists("/internet"):
+            shutil.rmtree("/internet")
+        os.mkdir("/internet")
 
-    print(" ==> Starting DNS server")
-#    gen_dns(database.con)
+        print(" ==> Generating new configuration")
+        gen_config(database.con, "/internet")
 
-    print(" ==> Starting the routers")
+        print(" ==> Starting DNS server")
+        gen_dns(database.con, "/internet")
+
+        print(" ==> Starting the routers")
+
+    container.attach_wait(reset_project,
+                          env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
 
 
 parser = argparse.ArgumentParser(description="Internet generator")
