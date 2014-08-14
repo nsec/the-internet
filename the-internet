@@ -534,8 +534,17 @@ def create_container(args):
     print(" ==> Installing the required packages")
     execute(container, ["apt-get", "update"])
     execute(container, ["apt-get", "dist-upgrade", "-y"])
-    execute(container, ["apt-get", "install", "lxc", "quagga",
+    execute(container, ["apt-get", "install", "dnsmasq-base", "lxc", "quagga",
                         "iputils-tracepath", "mtr-tiny", "-y"])
+
+    execute(container, ["ln", "-s", "/internet/legacy/etc/quagga/bgpd.conf",
+                        "/etc/quagga/bgpd.conf"])
+    execute(container, ["ln", "-s", "/internet/legacy/etc/quagga/zebra.conf",
+                        "/etc/quagga/zebra.conf"])
+    execute(container, ["sed", "-i", "s/zebra=no/zebra=yes/",
+                        "/etc/quagga/daemons"])
+    execute(container, ["sed", "-i", "s/bgpd=no/bgpd=yes/",
+                        "/etc/quagga/daemons"])
 
     def create_sub_container():
         print(" ==> Creating a router template sub-container")
