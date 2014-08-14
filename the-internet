@@ -441,18 +441,18 @@ def gen_dnsmasq(database, target):
     records = cur.fetchall()
 
     with open("%s/dnsmasq.conf" % target, "w+") as fd:
-        fd.write("no-hosts")
-        fd.write("bind-interfaces")
-        fd.write("pid-file=/internet/dnsmasq.pid")
-        fd.write("listen-address=127.0.1.1")
-        fd.write("cache-size=0")
-        fd.write("proxy-dnssec")
+        fd.write("no-hosts\n")
+        fd.write("bind-interfaces\n")
+        fd.write("pid-file=/internet/dnsmasq.pid\n")
+        fd.write("listen-address=127.0.1.1\n")
+        fd.write("cache-size=0\n")
+        fd.write("proxy-dnssec\n")
 
         if records:
             for record in records:
-                fd.write("address=/%s./%s" % (record[1], record[0]))
+                fd.write("address=/%s./%s\n" % (record[1], record[0]))
                 rdns = netaddr.IPAddress(record[0]).reverse_dns
-                fd.write("address=/%s/%s." % (rdns, record[1]))
+                fd.write("address=/%s/%s.\n" % (rdns, record[1]))
 
         cur.execute("select * from router")
         records = cur.fetchall()
@@ -473,9 +473,9 @@ def gen_dnsmasq(database, target):
                     random.randint(0, 4095))
                 ipv6 = str(netaddr.ip.IPAddress(strprefix).ipv6())
 
-                fd.write("address=/%s./%s" % (rtrfqdn, ipv6))
+                fd.write("address=/%s./%s\n" % (rtrfqdn, ipv6))
                 rdns = netaddr.IPAddress(ipv6).reverse_dns
-                fd.write("address=/%st/%s." % (rdns, rtrfqdn))
+                fd.write("address=/%st/%s.\n" % (rdns, rtrfqdn))
 
 
 def execute(container, cmd, cwd="/"):
