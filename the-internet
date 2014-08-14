@@ -192,8 +192,8 @@ iface lo inet loopback
                      """delay %dms || true\n""" %
                      (link['iface'], link['latency']))
             fd.write("""    post-up tc qdisc add dev %s root netem """
-                    """rate %dmbit || true\n""" %
-                    (link['iface'], link['speed']))
+                     """rate %dmbit || true\n""" %
+                     (link['iface'], link['speed']))
         if rtrtier != 3:
             return
 
