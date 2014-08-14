@@ -452,7 +452,7 @@ def gen_dnsmasq(database, target):
             for record in records:
                 fd.write("address=/%s./%s\n" % (record[1], record[0]))
                 rdns = netaddr.IPAddress(record[0]).reverse_dns
-                fd.write("address=/%s/%s.\n" % (rdns, record[1]))
+                fd.write("ptr-record=%s,%s.\n" % (rdns, record[1]))
 
         cur.execute("select * from router")
         records = cur.fetchall()
@@ -475,7 +475,7 @@ def gen_dnsmasq(database, target):
 
                 fd.write("address=/%s./%s\n" % (rtrfqdn, ipv6))
                 rdns = netaddr.IPAddress(ipv6).reverse_dns
-                fd.write("address=/%s/%s.\n" % (rdns, rtrfqdn))
+                fd.write("ptr-record=%s,%s.\n" % (rdns, rtrfqdn))
 
 
 def execute(container, cmd, cwd="/"):
@@ -534,8 +534,9 @@ def create_container(args):
     print(" ==> Installing the required packages")
     execute(container, ["apt-get", "update"])
     execute(container, ["apt-get", "dist-upgrade", "-y"])
-    execute(container, ["apt-get", "install", "dnsmasq-base", "lxc", "quagga",
-                        "iputils-tracepath", "mtr-tiny", "-y"])
+    execute(container, ["apt-get", "install", "bind9-host", "dnsmasq-base",
+                        "iputils-tracepath", "lxc", "mtr-tiny",
+                        "quagga", "-y"])
 
     execute(container, ["ln", "-s", "/internet/legacy/etc/quagga/bgpd.conf",
                         "/etc/quagga/bgpd.conf"])
@@ -563,8 +564,9 @@ def create_container(args):
         print(" ==> Installing the required packages")
         execute(sub_container, ["apt-get", "update"])
         execute(sub_container, ["apt-get", "dist-upgrade", "-y"])
-        execute(sub_container, ["apt-get", "install", "quagga",
-                                "iputils-tracepath", "mtr-tiny", "-y"])
+        execute(sub_container, ["apt-get", "install", "bind9-host",
+                                "iputils-tracepath", "mtr-tiny",
+                                "quagga", "-y"])
 
     container.attach_wait(create_sub_container,
                           env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
@@ -637,28 +639,43 @@ def start_simulation(args):
     database = InternetDB(project_path)
     database.init_tables()
 
-    def reset_project():
+    def project_config():
         os.environ['PATH'] = '/usr/sbin:/usr/bin:/sbin:/bin'
         os.environ['HOME'] = '/root'
 
-        print(" ==> Flushing existing configuration")
-        # Stop all containers
-        # Stop dnsmasq
-        # Wipe /internet
+        # Kill all containers
+        print(" ==> Stopping any running container")
+        for router in lxc.list_containers(config_path="/var/lib/lxc",
+                                          as_object=True):
+            router.stop()
+
+        # Kill dnsmasq
+        if os.path.exists("/internet/dnsmasq.pid"):
+            print(" ==> Stopping the DNS server")
+            with open("/internet/dnsmasq.pid", "r") as fd:
+                try:
+                    os.kill(int(fd.read().strip()), 9)
+                except:
+                    pass
+
+        # Remove all config
         if os.path.exists("/internet"):
+            print(" ==> Flushing existing configuration")
             shutil.rmtree("/internet")
         os.mkdir("/internet")
 
+        # Generate the config
         print(" ==> Generating new configuration")
         gen_config(database.con, "/internet")
-
-        print(" ==> Starting DNS server")
         gen_dnsmasq(database.con, "/internet")
 
-        print(" ==> Starting the routers")
-
-    container.attach_wait(reset_project,
+    # Setup the configuration
+    container.attach_wait(project_config,
                           env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
+
+    # Start dnsmasq
+    print(" ==> Starting DNS server")
+    execute(container, ["dnsmasq", "-C", "/internet/dnsmasq.conf"])
 
 
 parser = argparse.ArgumentParser(description="Internet generator")
