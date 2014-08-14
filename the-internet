@@ -10,6 +10,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import math
 
 
 class InternetDB():
@@ -28,12 +29,36 @@ class InternetDB():
         cur.execute("DROP TABLE IF EXISTS links")
         cur.execute("CREATE TABLE links (id INT, left TEXT, right TEXT, "
                     "mac_left TEXT, mac_right TEXT, left_prio INT, "
-                    "right_prio INT, latency INT, speed INT)")
+                    "right_prio INT, latency REAL, speed INT)")
         self.import_links_csv(cur)
 
         cur.execute("DROP TABLE IF EXISTS dns")
         cur.execute("CREATE TABLE dns (ipv6 TEXT, name TEXT)")
         self.import_dns_csv(cur)
+
+    def dist_latency(self, origin, destination):
+        o = origin.split("/")
+        lat1 = float(o[0])
+        lon1 = float(o[1])
+        d = destination.split("/")
+        lat2 = float(d[0])
+        lon2 = float(d[1])
+        # km
+        radius = 6371
+
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = math.sin(dlat / 2) * math.sin(dlat / 2) + \
+            math.cos(math.radians(lat1)) *\
+            math.cos(math.radians(lat2)) * \
+            math.sin(dlon / 2) * math.sin(dlon / 2)
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        d = radius * c
+        # speed of light in optical fiber approx 213 km/s
+        # adding 35% for the overhead
+        # adding 0.5ms for the transceiver delay
+        speed = 139
+        return round(d/speed + 0.5, 1)
 
     def import_links_csv(self, cur):
         with open(os.path.join(self.project_path, "Links.csv"),
@@ -51,26 +76,24 @@ class InternetDB():
                 if not row[0]:
                     continue
 
-                cur.execute("select lxcname from router "
-                            "where lxcname=:name", {"name": row[0]})
-                rtr = cur.fetchall()
-                if not rtr:
+                left = get_router_data(cur, row[0])
+                if not left:
                     print("Wrong left router name", row[0])
 
-                cur.execute("select lxcname from router "
-                            "where lxcname=:name", {"name": row[1]})
-                rtr = cur.fetchall()
-                if not rtr:
+                right = get_router_data(cur, row[1])
+                if not right:
                     print("Wrong right router name", row[1])
 
+                latency = self.dist_latency(left["gps"], right["gps"])
+
                 # csv: Left, Right, Mac Left, Mac Right, Left priority,
-                #      Right priority, Latency, Speed
+                #      Right priority, Speed
 
                 # db: id, left, right, mac_left, mac_right, left_prio,
                 #     right_prio, latency, speed
                 cur.execute("INSERT INTO links VALUES(?,?,?,?,?,?,?,?,?)",
                             (linkid, row[0], row[1], row[2], row[3], row[4],
-                             row[5], row[6], row[7]))
+                             row[5], latency, row[6]))
                 linkid += 1
 
     def read_routers_csv(self, cur):
@@ -199,6 +222,8 @@ def get_router_data(cur, name):
     cur.execute("select id, name, gps, fqdn, lxcname, asn, internal, tier, "
                 "prefix from router where lxcname=:name", {"name": name})
     r = cur.fetchone()
+    if not r:
+        return None
     rtr["id"], rtr["name"], rtr["gps"], rtr["fqdn"], rtr["lxcname"], \
         rtr["asn"], rtr["internal"], rtr["tier"], rtr["prefix"] = r
     return rtr
