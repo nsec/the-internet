@@ -343,7 +343,7 @@ lxc.include = /usr/share/lxc/config/ubuntu.userns.conf
 lxc.arch = amd64
 
 # Container specific configuration
-lxc.rootfs = overlayfs:/var/lib/lxc/tpl-quagga/rootfs:/nsec/overlay/%s
+lxc.rootfs = overlayfs:/var/lib/lxc/tpl-router/rootfs:/nsec/overlay/%s
 lxc.utsname = %s
 
 """ % (rtrlxcname, rtrlxcname))
@@ -406,39 +406,47 @@ def gen_config(database, target, startgroup=0):
             gen_lxc_config(cur, rtrlxcname, rtrgroup, target)
 
 
-def gen_dns(database, target):
+def gen_dnsmasq(database, target):
     cur = database.cursor()
     cur.execute("select * from dns")
     records = cur.fetchall()
 
-    if records:
-        for record in records:
-            print("%s. AAAA %s" % (record[1], record[0]))
-            rdns = netaddr.IPAddress(record[0]).reverse_dns
-            print("%s PTR %s." % (rdns, record[1]))
+    with open("%s/dnsmasq.conf" % target, "w+") as fd:
+        fd.write("no-hosts")
+        fd.write("bind-interfaces")
+        fd.write("pid-file=/internet/dnsmasq.pid")
+        fd.write("listen-address=127.0.1.1")
+        fd.write("cache-size=0")
+        fd.write("proxy-dnssec")
 
-    cur.execute("select * from router")
-    records = cur.fetchall()
+        if records:
+            for record in records:
+                fd.write("address=/%s./%s" % (record[1], record[0]))
+                rdns = netaddr.IPAddress(record[0]).reverse_dns
+                fd.write("address=/%s/%s." % (rdns, record[1]))
 
-    if records:
-        for record in records:
-            rtrid = record[0]
-            rtrfqdn = record[3]
-            rtrprefix = record[8].split("/")[0][0:9]
+        cur.execute("select * from router")
+        records = cur.fetchall()
 
-            if not rtrfqdn or not rtrprefix:
-                continue
+        if records:
+            for record in records:
+                rtrid = record[0]
+                rtrfqdn = record[3]
+                rtrprefix = record[8].split("/")[0][0:9]
 
-            random.seed(rtrid)
-            strprefix = "%s:%s:%d:%d:%d:%d" % (
-                rtrprefix, "dead:beef", random.randint(0, 4095),
-                random.randint(0, 4095), random.randint(0, 4095),
-                random.randint(0, 4095))
-            ipv6 = str(netaddr.ip.IPAddress(strprefix).ipv6())
+                if not rtrfqdn or not rtrprefix:
+                    continue
 
-            print("%s. AAAA %s" % (rtrfqdn, ipv6))
-            rdns = netaddr.IPAddress(ipv6).reverse_dns
-            print("%s PTR %s." % (rdns, rtrfqdn))
+                random.seed(rtrid)
+                strprefix = "%s:%s:%d:%d:%d:%d" % (
+                    rtrprefix, "dead:beef", random.randint(0, 4095),
+                    random.randint(0, 4095), random.randint(0, 4095),
+                    random.randint(0, 4095))
+                ipv6 = str(netaddr.ip.IPAddress(strprefix).ipv6())
+
+                fd.write("address=/%s./%s" % (rtrfqdn, ipv6))
+                rdns = netaddr.IPAddress(ipv6).reverse_dns
+                fd.write("address=/%st/%s." % (rdns, rtrfqdn))
 
 
 def execute(container, cmd, cwd="/"):
@@ -606,7 +614,7 @@ def start_simulation(args):
         gen_config(database.con, "/internet")
 
         print(" ==> Starting DNS server")
-        gen_dns(database.con, "/internet")
+        gen_dnsmasq(database.con, "/internet")
 
         print(" ==> Starting the routers")
 
