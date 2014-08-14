@@ -330,7 +330,7 @@ def gen_setup_script(cur, rtrs, startgroup, target):
         fd.write("lxc-autostart -g routers1 -k\n")
         fd.write("lxc-autostart -g routers2 -k\n")
         fd.write("/etc/init.d/quagga stop\n")
-        fd.write("rm -Rf /nsec/delta\n\n")
+        fd.write("rm -Rf /internet/delta\n\n")
         fd.write("rm -f /var/lib/lxc/bgp-*\n\n")
 
         for (linkid,) in links:
@@ -344,9 +344,9 @@ def gen_setup_script(cur, rtrs, startgroup, target):
             if rtr == "legacy" or not rtr.startswith("bgp-"):
                 continue
 
-            fd.write("ln -s /nsec/config/%s /var/lib/lxc/%s\n" %
+            fd.write("ln -s /internet/config/%s /var/lib/lxc/%s\n" %
                      (rtr, rtr))
-            fd.write("mkdir -p /nsec/overlay/%s\n" % rtr)
+            fd.write("mkdir -p /internet/overlay/%s\n" % rtr)
 
         fd.write("\n")
         for link in get_links(cur, "legacy", True):
@@ -368,14 +368,14 @@ lxc.include = /usr/share/lxc/config/ubuntu.userns.conf
 lxc.arch = amd64
 
 # Container specific configuration
-lxc.rootfs = overlayfs:/var/lib/lxc/tpl-router/rootfs:/nsec/overlay/%s
+lxc.rootfs = overlayfs:/var/lib/lxc/tpl-router/rootfs:/internet/overlay/%s
 lxc.utsname = %s
 
 """ % (rtrlxcname, rtrlxcname))
         for path in ("etc/hostname", "etc/hosts", "etc/network/interfaces",
                      "etc/quagga/bgpd.conf", "etc/quagga/zebra.conf"):
-            fd.write("lxc.mount.entry = /nsec/config/%s/%s %s none bind\n" %
-                     (rtrlxcname, path, path))
+            fd.write("lxc.mount.entry = /internet/config/%s/%s %s none bind\n"
+                     % (rtrlxcname, path, path))
 
         fd.write("""
 # Auto-start
@@ -530,7 +530,8 @@ def create_container(args):
     print(" ==> Installing the required packages")
     execute(container, ["apt-get", "update"])
     execute(container, ["apt-get", "dist-upgrade", "-y"])
-    execute(container, ["apt-get", "install", "lxc", "-y"])
+    execute(container, ["apt-get", "install", "lxc", "quagga",
+                        "iputils-tracepath", "mtr-tiny", "-y"])
 
     def create_sub_container():
         print(" ==> Creating a router template sub-container")
