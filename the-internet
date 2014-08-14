@@ -188,8 +188,8 @@ iface lo inet loopback
 """ % (ipv6))
 
         for link in get_links(cur, rtrlxcname, True):
-            fd.write("""#    post-up tc qdisc add dev %s root netem """
-                     """delay %dms\n""" % (link['iface'], link['latency']))
+            fd.write("""    post-up tc qdisc add dev %s root netem """
+                     """delay %dms || true\n""" % (link['iface'], link['latency']))
         if rtrtier != 3:
             return
 
