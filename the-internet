@@ -475,7 +475,7 @@ def gen_dnsmasq(database, target):
 
                 fd.write("address=/%s./%s\n" % (rtrfqdn, ipv6))
                 rdns = netaddr.IPAddress(ipv6).reverse_dns
-                fd.write("address=/%st/%s.\n" % (rdns, rtrfqdn))
+                fd.write("address=/%s/%s.\n" % (rdns, rtrfqdn))
 
 
 def execute(container, cmd, cwd="/"):
