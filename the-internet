@@ -174,7 +174,7 @@ def gen_interfaces(cur, rtrlxcname, rtrid, rtrprefix,
     os.mkdir("%s/%s/etc/network/" % (target, rtrlxcname))
     random.seed(rtrid)
     ip = netaddr.ip
-    strprefix = "%s:%s:%d:%d:%d:%d" % (
+    strprefix = "%s:%s:%s:%s:%s:%s" % (
         rtrprefix, "dead:beef", random.randint(0, 4095),
         random.randint(0, 4095), random.randint(0, 4095),
         random.randint(0, 4095))
@@ -189,10 +189,10 @@ iface lo inet loopback
 
         for link in get_links(cur, rtrlxcname, True):
             fd.write("""    post-up tc qdisc add dev %s root netem """
-                     """delay %dms || true\n""" %
+                     """delay %sms || true\n""" %
                      (link['iface'], link['latency']))
             fd.write("""    post-up tc qdisc add dev %s root netem """
-                     """rate %dmbit || true\n""" %
+                     """rate %smbit || true\n""" %
                      (link['iface'], link['speed']))
         if rtrtier != 3:
             return
@@ -216,8 +216,8 @@ def gen_zebra(rtrlxcname, target):
     os.mkdir("%s/%s/etc/quagga/" % (target, rtrlxcname))
     with open("%s/%s/etc/quagga/zebra.conf" % (target, rtrlxcname), "w") as fd:
         fd.write("""hostname %s
-password zebra%d
-enable password zebra%d\n""" % (rtrlxcname, random.randint(9999, 99999999),
+password zebra%s
+enable password zebra%s\n""" % (rtrlxcname, random.randint(9999, 99999999),
                                 random.randint(9999, 99999999)))
 
 
@@ -248,7 +248,7 @@ def get_links(cur, rtrlxcname, show_all=False):
             link["right_asn"] = r["asn"]
             link["right_tier"] = r["tier"]
             link["right_prefix"] = r["prefix"]
-            link["iface"] = "veth-%d-1" % link["id"]
+            link["iface"] = "veth-%s-1" % link["id"]
             linklist.append(link)
 
     cur.execute("select id,right,left,mac_right,mac_left,right_prio,"
@@ -264,7 +264,7 @@ def get_links(cur, rtrlxcname, show_all=False):
             link["right_asn"] = r["asn"]
             link["right_tier"] = r["tier"]
             link["right_prefix"] = r["prefix"]
-            link["iface"] = "veth-%d-2" % link["id"]
+            link["iface"] = "veth-%s-2" % link["id"]
             linklist.append(link)
 
     return sorted(linklist, key=lambda link: link['id'])
@@ -279,7 +279,7 @@ def gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, target):
 
     with open("%s/%s/etc/quagga/bgpd.conf" % (target, rtrlxcname), "w") as fd:
         fd.write("""hostname %s
-password zebra%d
+password zebra%s
 
 router bgp %s
  bgp router-id %s
@@ -292,7 +292,7 @@ router bgp %s
             ll = str(mac.ipv6_link_local())
             l["link-local"] = ll
             fd.write(" neighbor %s remote-as %s\n" % (ll, l["right_asn"]))
-            fd.write("! neighbor %s weight %d\n" % (ll, weight))
+            fd.write("! neighbor %s weight %s\n" % (ll, weight))
             fd.write(" neighbor %s interface %s\n\n" % (ll, l["iface"]))
             weight += 10
         fd.write(" address-family ipv6\n")
@@ -359,7 +359,7 @@ def gen_setup_script(cur, rtrs, startgroup, target):
             fd.write("ip link set dev %s up\n" % link['iface'])
 
         fd.write("\n/etc/init.d/quagga start\n")
-        fd.write("lxc-autostart -g routers%d\n" % startgroup)
+        fd.write("lxc-autostart -g routers%s\n" % startgroup)
 
 
 def gen_lxc_config(cur, rtrlxcname, rtrgroup, target):
@@ -384,7 +384,7 @@ lxc.utsname = %s
         fd.write("""
 # Auto-start
 lxc.start.auto = 1
-lxc.group = routers%d
+lxc.group = routers%s
 
 # Network configuration
 """ % rtrgroup)
@@ -467,7 +467,7 @@ def gen_dnsmasq(database, target):
                     continue
 
                 random.seed(rtrid)
-                strprefix = "%s:%s:%d:%d:%d:%d" % (
+                strprefix = "%s:%s:%s:%s:%s:%s" % (
                     rtrprefix, "dead:beef", random.randint(0, 4095),
                     random.randint(0, 4095), random.randint(0, 4095),
                     random.randint(0, 4095))
