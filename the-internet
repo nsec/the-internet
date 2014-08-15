@@ -321,47 +321,6 @@ def gen_hostname(rtrlxcname, target):
         fd.write("%s\n" % rtrlxcname)
 
 
-def gen_setup_script(cur, rtrs, startgroup, target):
-    cur.execute("select id from links")
-    links = cur.fetchall()
-    if not links:
-        return
-
-    with open("%s/setup.sh" % target, "w+") as fd:
-        fd.write("#!/bin/sh\n")
-
-        fd.write("lxc-autostart -g routers0 -k\n")
-        fd.write("lxc-autostart -g routers1 -k\n")
-        fd.write("lxc-autostart -g routers2 -k\n")
-        fd.write("/etc/init.d/quagga stop\n")
-        fd.write("rm -Rf /internet/delta\n\n")
-        fd.write("rm -f /var/lib/lxc/bgp-*\n\n")
-
-        for (linkid,) in links:
-            fd.write("ip link add name veth-%s-1 type veth "
-                     "peer name veth-%s-2 2>/dev/null\n" %
-                     (linkid, linkid))
-
-        fd.write("\n")
-
-        for rtr in rtrs:
-            if rtr == "legacy" or not rtr.startswith("bgp-"):
-                continue
-
-            fd.write("ln -s /internet/config/%s /var/lib/lxc/%s\n" %
-                     (rtr, rtr))
-            fd.write("mkdir -p /internet/overlay/%s\n" % rtr)
-
-        fd.write("\n")
-        for link in get_links(cur, "legacy", True):
-            fd.write("ip link set dev %s address %s\n" % (link['iface'],
-                                                          link['mac_left']))
-            fd.write("ip link set dev %s up\n" % link['iface'])
-
-        fd.write("\n/etc/init.d/quagga start\n")
-        fd.write("lxc-autostart -g routers%s\n" % startgroup)
-
-
 def gen_lxc_config(cur, rtrlxcname, rtrgroup, target):
     with open("%s/%s/config" % (target, rtrlxcname), "w+") as fd:
         fd.write("""# Auto-generated, do not manually edit.
@@ -372,13 +331,13 @@ lxc.include = /usr/share/lxc/config/ubuntu.userns.conf
 lxc.arch = amd64
 
 # Container specific configuration
-lxc.rootfs = overlayfs:/var/lib/lxc/tpl-router/rootfs:/internet/overlay/%s
+lxc.rootfs = overlayfs:/var/lib/lxc/tpl-router/rootfs:/internet/%s/overlay/
 lxc.utsname = %s
 
 """ % (rtrlxcname, rtrlxcname))
         for path in ("etc/hostname", "etc/hosts", "etc/network/interfaces",
                      "etc/quagga/bgpd.conf", "etc/quagga/zebra.conf"):
-            fd.write("lxc.mount.entry = /internet/config/%s/%s %s none bind\n"
+            fd.write("lxc.mount.entry = /internet/%s/%s %s none bind\n"
                      % (rtrlxcname, path, path))
 
         fd.write("""
@@ -406,7 +365,6 @@ def gen_config(database, target, startgroup=0):
     if not rtrs:
         sys.exit(1)
 
-    gen_setup_script(cur, [rtr[4] for rtr in rtrs], startgroup, target)
     # id, name, gps, fqdn, lxcname, asn, internal, tier, prefix32, required
     for rtr in rtrs:
         rtrid = rtr[0]
@@ -424,6 +382,7 @@ def gen_config(database, target, startgroup=0):
         except:
             pass
         os.mkdir("%s/%s" % (target, rtrlxcname))
+        os.mkdir("%s/%s/overlay/" % (target, rtrlxcname))
         os.mkdir("%s/%s/etc/" % (target, rtrlxcname))
         gen_zebra(rtrlxcname, target)
         gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, target)
@@ -476,6 +435,38 @@ def gen_dnsmasq(database, target):
                 fd.write("address=/%s./%s\n" % (rtrfqdn, ipv6))
                 rdns = netaddr.IPAddress(ipv6).reverse_dns
                 fd.write("ptr-record=%s,%s.\n" % (rdns, rtrfqdn))
+
+
+def create_interfaces(database):
+    cur = database.cursor()
+    cur.execute("select id from links")
+    links = cur.fetchall()
+    if not links:
+        return
+
+    # Container interfaces
+    for (linkid,) in links:
+        # Remove existing interfaces
+        if os.path.exists("/sys/class/net/veth-%s-1" % linkid):
+            if subprocess.call(['ip', 'link', 'del', 'dev',
+                                'veth-%s-1' % linkid]) != 0:
+                raise Error("Failed to destroy interface: %s" % linkid)
+
+        # Then create it from scratch
+        if subprocess.call(['ip', 'link', 'add', 'name', 'veth-%s-1' % linkid,
+                            'type', 'veth', 'peer', 'name',
+                            'veth-%s-2' % linkid]) != 0:
+            raise Error("Failed to create interfaces for link: %s" % linkid)
+
+    # Host side interfaces
+    for link in get_links(cur, "legacy", True):
+        if subprocess.call(['ip', 'link', 'set', 'dev', link['iface'],
+                            'address', link['mac_left']]) != 0:
+            raise Error("Failed to set MAC for link: %s" % link['iface'])
+
+        if subprocess.call(['ip', 'link', 'set', 'dev', link['iface'],
+                            'up']) != 0:
+            raise Error("Failed to bring link up: %s" % link['iface'])
 
 
 def execute(container, cmd, cwd="/"):
@@ -568,6 +559,15 @@ def create_container(args):
                                 "iputils-tracepath", "mtr-tiny",
                                 "quagga", "-y"])
 
+        # Configure quagga
+        print(" ==> Configuring quagga")
+        execute(sub_container, ["sed", "-i", "s/zebra=no/zebra=yes/",
+                            "/etc/quagga/daemons"])
+        execute(sub_container, ["sed", "-i", "s/bgpd=no/bgpd=yes/",
+                            "/etc/quagga/daemons"])
+        execute(sub_container, ["touch", "/etc/quagga/bgpd.conf"])
+        execute(sub_container, ["touch", "/etc/quagga/zebra.conf"])
+
     container.attach_wait(create_sub_container,
                           env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
 
@@ -645,7 +645,7 @@ def start_simulation(args):
 
         # Kill all containers
         print(" ==> Stopping any running container")
-        for router in lxc.list_containers(config_path="/var/lib/lxc",
+        for router in lxc.list_containers(config_path="/internet",
                                           as_object=True):
             router.stop()
 
@@ -669,6 +669,10 @@ def start_simulation(args):
         gen_config(database.con, "/internet")
         gen_dnsmasq(database.con, "/internet")
 
+        # Create the interfaces
+        print(" ==> Creating the veth interfaces")
+        create_interfaces(database.con)
+
     # Setup the configuration
     container.attach_wait(project_config,
                           env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
@@ -676,6 +680,14 @@ def start_simulation(args):
     # Start dnsmasq
     print(" ==> Starting DNS server")
     execute(container, ["dnsmasq", "-C", "/internet/dnsmasq.conf"])
+
+    # Restart quagga
+    print(" ==> Restarting BGP")
+    execute(container, ["/etc/init.d/quagga", "restart"])
+
+    # Start the routers
+    print(" ==> Starting the routers")
+    execute(container, ["lxc-autostart", "-P", "/internet", "-g", "routers0"])
 
 
 parser = argparse.ArgumentParser(description="Internet generator")
