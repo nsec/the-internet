@@ -18,13 +18,13 @@ class InternetDB():
         self.con = sqlite3.connect(':memory:')
         self.project_path = project_path
 
-    def init_tables(self):
+    def init_tables(self, level):
         cur = self.con.cursor()
         cur.execute("DROP TABLE IF EXISTS router")
         cur.execute("CREATE TABLE router (id INT, name TEXT, gps TEXT, "
                     "fqdn TEXT, lxcname TEXT, asn INT, internal INT, "
-                    "tier INT, prefix TEXT, required INT)")
-        self.read_routers_csv(cur)
+                    "tier INT, prefix TEXT)")
+        self.read_routers_csv(cur, level)
 
         cur.execute("DROP TABLE IF EXISTS links")
         cur.execute("CREATE TABLE links (id INT, left TEXT, right TEXT, "
@@ -78,11 +78,11 @@ class InternetDB():
 
                 left = get_router_data(cur, row[0])
                 if not left:
-                    print("Wrong left router name", row[0])
+                    continue
 
                 right = get_router_data(cur, row[1])
                 if not right:
-                    print("Wrong right router name", row[1])
+                    continue
 
                 latency = self.dist_latency(left["gps"], right["gps"])
 
@@ -96,7 +96,7 @@ class InternetDB():
                              row[5], latency, row[6]))
                 linkid += 1
 
-    def read_routers_csv(self, cur):
+    def read_routers_csv(self, cur, level):
         routerid = 0
         with open(os.path.join(self.project_path, "Telco.csv"),
                   'r') as csvfile:
@@ -112,13 +112,16 @@ class InternetDB():
                 if not row[0]:
                     continue
 
+                if row[8] and level is not None and int(row[8]) > level:
+                    continue
+
                 # csv: Name-0, FQDN-1, Lxc-name-2, Tier-3, Prefix-4, ASN-5,
                 #      Internal-6, GPS-7
 
                 # db: id, name, gps, fqdn, lxcname, asn, internal, tier, prefix
-                cur.execute("INSERT INTO router VALUES(?,?,?,?,?,?,?,?,?,?)",
+                cur.execute("INSERT INTO router VALUES(?,?,?,?,?,?,?,?,?)",
                             (routerid, row[0], row[7], row[1], row[2], row[5],
-                             row[6], row[3], row[4], row[8]))
+                             row[6], row[3], row[4]))
                 routerid += 1
 
         with open(os.path.join(self.project_path, "Routers.csv"),
@@ -321,7 +324,7 @@ def gen_hostname(rtrlxcname, target):
         fd.write("%s\n" % rtrlxcname)
 
 
-def gen_lxc_config(cur, rtrlxcname, rtrgroup, target):
+def gen_lxc_config(cur, rtrlxcname, target):
     with open("%s/%s/config" % (target, rtrlxcname), "w+") as fd:
         fd.write("""# Auto-generated, do not manually edit.
 
@@ -343,10 +346,10 @@ lxc.utsname = %s
         fd.write("""
 # Auto-start
 lxc.start.auto = 1
-lxc.group = routers%s
+lxc.group = routers
 
 # Network configuration
-""" % rtrgroup)
+""")
 
         for link in get_links(cur, rtrlxcname, True):
             fd.write("""lxc.network.type = phys
@@ -372,7 +375,6 @@ def gen_config(database, target, startgroup=0):
         rtrasn = rtr[5]
         rtrtier = rtr[7]
         rtrprefix = rtr[8].split("/")[0][0:9]
-        rtrgroup = rtr[9]
         rtrfqdn = rtr[3]
 
         if rtrtier == 4:
@@ -391,7 +393,7 @@ def gen_config(database, target, startgroup=0):
                            rtrfqdn, target)
             gen_hosts(rtrlxcname, target)
             gen_hostname(rtrlxcname, target)
-            gen_lxc_config(cur, rtrlxcname, rtrgroup, target)
+            gen_lxc_config(cur, rtrlxcname, target)
 
 
 def gen_dnsmasq(database, target):
@@ -562,11 +564,15 @@ def create_container(args):
         # Configure quagga
         print(" ==> Configuring quagga")
         execute(sub_container, ["sed", "-i", "s/zebra=no/zebra=yes/",
-                            "/etc/quagga/daemons"])
+                                "/etc/quagga/daemons"])
         execute(sub_container, ["sed", "-i", "s/bgpd=no/bgpd=yes/",
-                            "/etc/quagga/daemons"])
+                                "/etc/quagga/daemons"])
         execute(sub_container, ["touch", "/etc/quagga/bgpd.conf"])
         execute(sub_container, ["touch", "/etc/quagga/zebra.conf"])
+
+        # Stop the container
+        print(" ==> Stopping the sub-container")
+        sub_container.stop()
 
     container.attach_wait(create_sub_container,
                           env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
@@ -617,6 +623,10 @@ def update_container(args):
         execute(sub_container, ["apt-get", "update"])
         execute(sub_container, ["apt-get", "dist-upgrade", "-y"])
 
+        # Stop the container
+        print(" ==> Stopping the sub-container")
+        sub_container.stop()
+
     container.attach_wait(update_sub_container,
                           env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
 
@@ -637,7 +647,7 @@ def start_simulation(args):
 
     print(" ==> Loading project: %s" % args.project)
     database = InternetDB(project_path)
-    database.init_tables()
+    database.init_tables(args.level)
 
     def project_config():
         os.environ['PATH'] = '/usr/sbin:/usr/bin:/sbin:/bin'
@@ -687,7 +697,18 @@ def start_simulation(args):
 
     # Start the routers
     print(" ==> Starting the routers")
-    execute(container, ["lxc-autostart", "-P", "/internet", "-g", "routers0"])
+    execute(container, ["lxc-autostart", "-P", "/internet", "-g", "routers"])
+
+
+def stop_container(args):
+    container = lxc.Container(args.name)
+
+    if not container.defined:
+        raise Error("Container '%s' doesn't exist." % args.name)
+
+    if container.running:
+        print(" ==> Stopping the container")
+        container.stop()
 
 
 parser = argparse.ArgumentParser(description="Internet generator")
@@ -713,8 +734,14 @@ parser_start.add_argument("--name", "-n", metavar="NAME", dest="name",
                           default="the-internet")
 parser_start.add_argument("--project", "-p", metavar="PROJECT", dest="project",
                           default="NorthSec 2014")
+parser_start.add_argument("--level", "-l", metavar="LEVEL", dest="level",
+                          default=None, type=int, help="Max start level")
 parser_start.set_defaults(func=start_simulation)
 
+parser_stop = subparsers.add_parser("stop", help="Kill the Internet")
+parser_stop.add_argument("--name", "-n", metavar="NAME", dest="name",
+                         default="the-internet")
+parser_stop.set_defaults(func=stop_container)
 
 args = parser.parse_args()
 
