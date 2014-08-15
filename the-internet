@@ -3,6 +3,7 @@
 import argparse
 import csv
 import lxc
+import math
 import netaddr
 import os
 import random
@@ -10,7 +11,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
-import math
+import webbrowser
 
 
 class InternetDB():
@@ -711,24 +712,96 @@ def stop_container(args):
         container.stop()
 
 
+def show_map(args):
+    project_path = os.path.join("input", args.project)
+    if not os.path.exists(project_path):
+        raise Error("Project '%s' doesn't exist." % args.project)
+
+    database = InternetDB(project_path)
+    database.init_tables(args.level)
+
+    cur = database.con.cursor()
+    cur.execute("SELECT name, gps, lxcname, fqdn, tier, asn FROM router")
+    routers = cur.fetchall()
+
+    cur.execute("SELECT id, left, right FROM links")
+    links = cur.fetchall()
+
+    if not routers or not links:
+        raise Error("Nothing to render on the map")
+
+    with open("map/routers.js", "w+") as fd:
+        for router in routers:
+            name = router[0].replace("'", "\\'")
+            gps = router[1].replace("/", " ").strip().split()
+            lxcname = router[2].replace("-", "_")
+            fqdn = router[3]
+            tier = router[4]
+            asn = router[5]
+            coord_name = "%s_coord" % lxcname
+            marker_name = "%s_marker" % lxcname
+
+            if tier == 0:
+                icon = "tier0Icon"
+            elif tier == 1:
+                icon = "tier1Icon"
+            elif tier == 2:
+                icon = "tier2Icon"
+            elif tier == 3:
+                icon = "tier3Icon"
+            else:
+                icon = "routerIcon"
+
+            fd.write("""
+var %s = [%s, %s];
+var %s = L.marker(%s, {icon: %s}).addTo(map);
+""" % (coord_name, gps[0], gps[1], marker_name, coord_name, icon))
+
+            fd.write("""
+%s.on('mousedown', function(e) {
+    var popup = L.popup()
+        .setLatLng(e.latlng)
+        .setContent('%s<br/>%s<br/>Tier %s<br/>AS: %s')
+        .openOn(map);
+});
+""" % (marker_name, name, fqdn, tier, asn))
+
+        for link in links:
+            id_r = link[0]
+            left = link[1].replace("-", "_")
+            right = link[2].replace("-", "_")
+
+            fd.write("""
+var line%s = [%s_coord, %s_coord]
+L.polyline(line%s, {color: 'blue', weight: 1}).addTo(map);
+""" % (id_r, left, right, id_r))
+
+    # open it
+    webbrowser.open("map/index.html")
+
+
 parser = argparse.ArgumentParser(description="Internet generator")
 subparsers = parser.add_subparsers()
 
+# create
 parser_create = subparsers.add_parser("create", help="Create a new Internet")
 parser_create.add_argument("--name", "-n", metavar="NAME", dest="name",
                            default="the-internet")
 parser_create.set_defaults(func=create_container)
 
-parser_update = subparsers.add_parser("update", help="Update the Internet")
-parser_update.add_argument("--name", "-n", metavar="NAME", dest="name",
-                           default="the-internet")
-parser_update.set_defaults(func=update_container)
-
+# destroy
 parser_destroy = subparsers.add_parser("destroy", help="Destroy the Internet")
 parser_destroy.add_argument("--name", "-n", metavar="NAME", dest="name",
                             default="the-internet")
 parser_destroy.set_defaults(func=destroy_container)
 
+# update
+parser_update = subparsers.add_parser("update", help="Update the Internet")
+parser_update.add_argument("--name", "-n", metavar="NAME", dest="name",
+                           default="the-internet")
+parser_update.set_defaults(func=update_container)
+
+# start
 parser_start = subparsers.add_parser("start", help="Start the simulation")
 parser_start.add_argument("--name", "-n", metavar="NAME", dest="name",
                           default="the-internet")
@@ -738,10 +811,19 @@ parser_start.add_argument("--level", "-l", metavar="LEVEL", dest="level",
                           default=None, type=int, help="Max start level")
 parser_start.set_defaults(func=start_simulation)
 
+# stop
 parser_stop = subparsers.add_parser("stop", help="Kill the Internet")
 parser_stop.add_argument("--name", "-n", metavar="NAME", dest="name",
                          default="the-internet")
 parser_stop.set_defaults(func=stop_container)
+
+# map
+parser_map = subparsers.add_parser("map", help="Show a map of a project")
+parser_map.add_argument("--project", "-p", metavar="PROJECT", dest="project",
+                        default="NorthSec 2014")
+parser_map.add_argument("--level", "-l", metavar="LEVEL", dest="level",
+                        default=None, type=int, help="Max start level")
+parser_map.set_defaults(func=show_map)
 
 args = parser.parse_args()
 
