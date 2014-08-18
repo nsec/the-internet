@@ -519,7 +519,7 @@ def create_container(args):
 
     print(" ==> Configuring the container")
     container.set_config_item("lxc.aa_profile", "unconfined")
-    container.set_config_item("lxc.mount.auto", "cgroup:mixed")
+    container.append_config_item("lxc.mount.auto", "cgroup:mixed")
     container.save_config()
 
     print(" ==> Starting the container")
@@ -570,6 +570,15 @@ def create_container(args):
                                 "/etc/quagga/daemons"])
         execute(sub_container, ["touch", "/etc/quagga/bgpd.conf"])
         execute(sub_container, ["touch", "/etc/quagga/zebra.conf"])
+
+        print(" ==> Disable unneeded services")
+        rootfs = sub_container.get_config_item("lxc.rootfs")
+        for service in ("console", "tty1", "tty2", "tty3", "tty4",
+                        "cron", "ssh", "upstart-socket-bridge",
+                        "upstart-file-bridge", "rsyslog"):
+            with open("%s/etc/init/%s.override" %
+                      (rootfs, service), "w+") as fd:
+                fd.write("manual\n")
 
         # Stop the container
         print(" ==> Stopping the sub-container")
