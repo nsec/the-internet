@@ -535,7 +535,7 @@ def create_container(args):
     execute(container, ["apt-get", "dist-upgrade", "-y"])
     execute(container, ["apt-get", "install", "bind9-host", "dnsmasq-base",
                         "iputils-tracepath", "lxc", "mtr-tiny",
-                        "quagga", "-y"])
+                        "quagga", "tcpdump", "-y"])
 
     execute(container, ["ln", "-s", "/internet/legacy/etc/quagga/bgpd.conf",
                         "/etc/quagga/bgpd.conf"])
@@ -565,7 +565,7 @@ def create_container(args):
         execute(sub_container, ["apt-get", "dist-upgrade", "-y"])
         execute(sub_container, ["apt-get", "install", "bind9-host",
                                 "iputils-tracepath", "mtr-tiny",
-                                "quagga", "-y"])
+                                "quagga", "tcpdump", "-y"])
 
         # Configure quagga
         print(" ==> Configuring quagga")
