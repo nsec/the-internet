@@ -537,6 +537,14 @@ def create_container(args):
                         "iputils-tracepath", "lxc", "mtr-tiny",
                         "quagga", "tcpdump", "-y"])
 
+    if args.daily:
+        execute(container, ["apt-get", "install",
+                            "software-properties-common", "-y"])
+        execute(container, ["apt-add-repository",
+                            "ppa:ubuntu-lxc/daily", "-y"])
+        execute(container, ["apt-get", "update"])
+        execute(container, ["apt-get", "dist-upgrade", "-y"])
+
     execute(container, ["ln", "-s", "/internet/legacy/etc/quagga/bgpd.conf",
                         "/etc/quagga/bgpd.conf"])
     execute(container, ["ln", "-s", "/internet/legacy/etc/quagga/zebra.conf",
@@ -874,6 +882,8 @@ subparsers = parser.add_subparsers()
 parser_create = subparsers.add_parser("create", help="Create a new Internet")
 parser_create.add_argument("--name", "-n", metavar="NAME", dest="name",
                            default="the-internet")
+parser_create.add_argument("--use-daily", dest="daily", action="store_true",
+                           default=False)
 parser_create.set_defaults(func=create_container)
 
 # destroy
