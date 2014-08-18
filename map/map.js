@@ -3,8 +3,7 @@ var map = L.map('map', {
     maxZoom: 10
 });
 
-//L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-L.tileLayer('http://{s}.www.toolserver.org/tiles/osm-no-labels/{z}/{x}/{y}.png', {
+L.tileLayer('http://tile.openstreetmap.nl/osm/{z}/{x}/{y}.png', {
     tileSize: 256,
 }).addTo(map);
 
