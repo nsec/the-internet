@@ -428,6 +428,7 @@ def gen_dnsmasq(database, target):
             for record in records:
                 rtrid = record[0]
                 rtrfqdn = record[3]
+                rtrlxcname = record[4]
                 rtrprefix = record[8].split("/")[0][0:9]
 
                 if not rtrfqdn or not rtrprefix:
@@ -439,6 +440,9 @@ def gen_dnsmasq(database, target):
                     random.randint(0, 4095), random.randint(0, 4095),
                     random.randint(0, 4095))
                 ipv6 = str(netaddr.ip.IPAddress(strprefix).ipv6())
+
+                if rtrlxcname == "legacy":
+                    ipv6 = "9000::1"
 
                 fd.write("address=/%s./%s\n" % (rtrfqdn, ipv6))
                 rdns = netaddr.IPAddress(ipv6).reverse_dns
@@ -718,6 +722,13 @@ def start_simulation(args):
     # Setup the host IPv6 address
     print(" ==> Setting up networking")
     execute(container, """#!/bin/sh -ex
+echo 2 > /proc/sys/net/ipv6/conf/eth0/accept_ra
+echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
+ip link set dev eth0 down
+ip link set dev eth0 up
+ip6tables -t nat -D POSTROUTING -o eth0 -j MASQUERADE 2>/dev/null || true
+ip6tables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+
 ip -6 addr del 9000::1/128 dev lo 2>/dev/null || true
 ip -6 addr add 9000::1/128 dev lo
 """)
@@ -833,9 +844,6 @@ def list_routers(args):
     routers = cur.fetchall()
 
     for router in sorted(routers, key=lambda router: router[2]):
-        if router[4] == 0:
-            continue
-
         print(" - %s (%s)" % (router[2], router[3]))
 
 
