@@ -481,7 +481,7 @@ def create_interfaces(database):
             raise Error("Failed to bring link up: %s" % link['iface'])
 
 
-def execute(container, cmd, cwd="/"):
+def execute(container, cmd, cwd="/", stdin=sys.stdin):
     def run_command(args):
         cmd, cwd = args
 
@@ -501,7 +501,8 @@ def execute(container, cmd, cwd="/"):
     print(" ==> Executing: \"%s\" in %s" % (" ".join(cmd), cwd))
     retval = container.attach_wait(run_command,
                                    (cmd, cwd),
-                                   env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
+                                   env_policy=lxc.LXC_ATTACH_CLEAR_ENV,
+                                   stdin=stdin)
 
     if retval != 0:
         raise Error("Failed to run the command.")
@@ -537,8 +538,8 @@ def create_container(args):
     print(" ==> Installing the required packages")
     execute(container, ["apt-get", "update"])
     execute(container, ["apt-get", "dist-upgrade", "-y"])
-    execute(container, ["apt-get", "install", "bind9-host", "dnsmasq-base",
-                        "iputils-tracepath", "lxc", "mtr-tiny",
+    execute(container, ["apt-get", "install", "apache2", "bind9-host",
+                        "dnsmasq-base", "iputils-tracepath", "lxc", "mtr-tiny",
                         "quagga", "tcpdump", "-y"])
 
     if args.daily:
@@ -557,6 +558,8 @@ def create_container(args):
                         "/etc/quagga/daemons"])
     execute(container, ["sed", "-i", "s/bgpd=no/bgpd=yes/",
                         "/etc/quagga/daemons"])
+    execute(container, ["rm", "-Rf", "/var/www/html"])
+    execute(container, ["ln", "-s", "/internet/map", "/var/www/html"])
 
     def create_sub_container():
         print(" ==> Creating a router template sub-container")
@@ -747,6 +750,18 @@ resolvconf -u
     print(" ==> Restarting BGP")
     execute(container, ["/etc/init.d/quagga", "restart"])
 
+    # Copy the map
+    print(" ==> Setup web server")
+    gen_map(database)
+    tar = subprocess.Popen(["tar", "cf", "-", "map",
+                            "--owner", "root", "--group", "root"],
+                           stdout=subprocess.PIPE, universal_newlines=True)
+    execute(container, ["tar", "xf", "-", "-C", "/internet"],
+            stdin=tar.stdout)
+    tar.wait()
+    execute(container, ["chmod", "-R", "000", "/internet/map"])
+    execute(container, ["chmod", "-R", "u+rwX,g+rwX,o+rX", "/internet/map"])
+
     # Start the routers
     print(" ==> Starting the routers")
     execute(container, ["lxc-autostart", "-P", "/internet", "-g", "routers"])
@@ -763,14 +778,7 @@ def stop_container(args):
         container.stop()
 
 
-def show_map(args):
-    project_path = os.path.join("input", args.project)
-    if not os.path.exists(project_path):
-        raise Error("Project '%s' doesn't exist." % args.project)
-
-    database = InternetDB(project_path)
-    database.init_tables(args.level)
-
+def gen_map(database):
     cur = database.con.cursor()
     cur.execute("SELECT name, gps, lxcname, fqdn, tier, asn FROM router")
     routers = cur.fetchall()
@@ -826,6 +834,17 @@ var %s = L.marker(%s, {icon: %s}).addTo(map);
 var line%s = [%s_coord, %s_coord]
 L.polyline(line%s, {color: 'blue', weight: 1}).addTo(map);
 """ % (id_r, left, right, id_r))
+
+
+def show_map(args):
+    project_path = os.path.join("input", args.project)
+    if not os.path.exists(project_path):
+        raise Error("Project '%s' doesn't exist." % args.project)
+
+    database = InternetDB(project_path)
+    database.init_tables(args.level)
+
+    gen_map(database)
 
     # open it
     webbrowser.open("map/index.html")

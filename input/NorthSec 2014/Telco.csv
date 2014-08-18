@@ -1,5 +1,5 @@
 Name,FQDN,Lxc-name,Tier,Prefix (/32),ASN,Internal,GPS (Long/Lat),Required
-OpenFace,legacynet.openface.intl.ctf,legacy,0,9000:0000::/32,1,,59.340467/18.058863,0
+OpenFace,legacy.net.ctf,legacy,0,9000:0000::/32,1,,59.340467/18.058863,0
 Level1 Communications,core.denver.level3.level2.level1.net.ctf,bgp-levelone01,1,9000:1249::/32,2200,,39.73814/-104.98535,1
 Level1 Communications,core.seatle.level3.level2.level1.net.ctf,bgp-levelone02,1,9000:1249::/32,2201,,47.60635/-122.33242,1
 Level1 Communications,core.la.level3.level2.level1.net.ctf,bgp-levelone03,1,9000:1249::/32,2202,,34.05169/-118.24413,1
