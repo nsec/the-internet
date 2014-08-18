@@ -189,6 +189,7 @@ def gen_interfaces(cur, rtrlxcname, rtrid, rtrprefix,
         fd.write("""auto lo
 iface lo inet loopback
     post-up ip -6 addr add dev lo %s/128
+    post-up echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
 """ % (ipv6))
 
         for link in get_links(cur, rtrlxcname, True):
@@ -406,9 +407,13 @@ def gen_dnsmasq(database, target):
         fd.write("no-hosts\n")
         fd.write("bind-interfaces\n")
         fd.write("pid-file=/internet/dnsmasq.pid\n")
-        fd.write("listen-address=127.0.1.1\n")
+        fd.write("listen-address=9000::1\n")
         fd.write("cache-size=0\n")
         fd.write("proxy-dnssec\n")
+        fd.write("server=8.8.8.8\n")
+        fd.write("server=8.8.4.4\n")
+        fd.write("server=2001:4860:4860::8888\n")
+        fd.write("server=2001:4860:4860::8844\n")
 
         if records:
             for record in records:
@@ -580,6 +585,11 @@ def create_container(args):
                       (rootfs, service), "w+") as fd:
                 fd.write("manual\n")
 
+        print(" ==> Setting up DNS")
+        execute(sub_container, """#!/bin/sh -ex
+echo nameserver 9000::1 > /etc/resolvconf/resolv.conf.d/tail
+""")
+
         # Stop the container
         print(" ==> Stopping the sub-container")
         sub_container.stop()
@@ -697,9 +707,22 @@ def start_simulation(args):
     container.attach_wait(project_config,
                           env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
 
+    # Setup the host IPv6 address
+    print(" ==> Setting up networking")
+    execute(container, """#!/bin/sh -ex
+ip -6 addr del 9000::1/128 dev lo 2>/dev/null || true
+ip -6 addr add 9000::1/128 dev lo
+""")
+
     # Start dnsmasq
     print(" ==> Starting DNS server")
     execute(container, ["dnsmasq", "-C", "/internet/dnsmasq.conf"])
+
+    execute(container, """#!/bin/sh -ex
+rm -f /run/resolvconf/interface/eth0.dhclient
+echo nameserver 9000::1 > /run/resolvconf/interface/the-internet
+resolvconf -u
+""")
 
     # Restart quagga
     print(" ==> Restarting BGP")
@@ -789,6 +812,61 @@ L.polyline(line%s, {color: 'blue', weight: 1}).addTo(map);
     webbrowser.open("map/index.html")
 
 
+def list_routers(args):
+    project_path = os.path.join("input", args.project)
+    if not os.path.exists(project_path):
+        raise Error("Project '%s' doesn't exist." % args.project)
+
+    database = InternetDB(project_path)
+    database.init_tables(args.level)
+
+    cur = database.con.cursor()
+    cur.execute("SELECT name, gps, lxcname, fqdn, tier, asn FROM router")
+    routers = cur.fetchall()
+
+    for router in sorted(routers, key=lambda router: router[2]):
+        if router[4] == 0:
+            continue
+
+        print(" - %s (%s)" % (router[2], router[3]))
+
+
+def shell_router(args):
+    container = lxc.Container(args.name)
+
+    if not container.defined:
+        raise Error("Container '%s' doesn't exist." % args.name)
+
+    if not container.running:
+        raise Error("Container '%s' isn't running." % args.name)
+
+    def spawn_shell():
+        os.environ['PATH'] = '/usr/sbin:/usr/bin:/sbin:/bin'
+        os.environ['HOME'] = '/root'
+
+        subprocess.call(["/bin/bash"])
+
+    if not args.router:
+        container.attach_wait(spawn_shell)
+        return
+
+    def attach_sub_container():
+        os.environ['PATH'] = '/usr/sbin:/usr/bin:/sbin:/bin'
+        os.environ['HOME'] = '/root'
+
+        sub_container = lxc.Container(args.router, "/internet/")
+
+        if not sub_container.defined:
+            raise Error("Sub-container '%s' doesn't exist." % args.router)
+
+        if not sub_container.running:
+            raise Error("Sub-container '%s' isn't running." % args.router)
+
+        sub_container.attach_wait(spawn_shell)
+
+    container.attach_wait(attach_sub_container)
+
+
 parser = argparse.ArgumentParser(description="Internet generator")
 subparsers = parser.add_subparsers()
 
@@ -804,11 +882,30 @@ parser_destroy.add_argument("--name", "-n", metavar="NAME", dest="name",
                             default="the-internet")
 parser_destroy.set_defaults(func=destroy_container)
 
-# update
-parser_update = subparsers.add_parser("update", help="Update the Internet")
-parser_update.add_argument("--name", "-n", metavar="NAME", dest="name",
-                           default="the-internet")
-parser_update.set_defaults(func=update_container)
+# list-routers
+parser_map = subparsers.add_parser("list-routers",
+                                   help="Show a list of routers")
+parser_map.add_argument("--project", "-p", metavar="PROJECT", dest="project",
+                        default="NorthSec 2014")
+parser_map.add_argument("--level", "-l", metavar="LEVEL", dest="level",
+                        default=None, type=int, help="Max start level")
+parser_map.set_defaults(func=list_routers)
+
+# map
+parser_map = subparsers.add_parser("map", help="Show a map of a project")
+parser_map.add_argument("--project", "-p", metavar="PROJECT", dest="project",
+                        default="NorthSec 2014")
+parser_map.add_argument("--level", "-l", metavar="LEVEL", dest="level",
+                        default=None, type=int, help="Max start level")
+parser_map.set_defaults(func=show_map)
+
+# shell
+parser_shell = subparsers.add_parser("shell",
+                                     help="Show a list of routers")
+parser_shell.add_argument("--name", "-n", metavar="NAME", dest="name",
+                          default="the-internet")
+parser_shell.add_argument("router", metavar="ROUTER", default=None, nargs="?")
+parser_shell.set_defaults(func=shell_router)
 
 # start
 parser_start = subparsers.add_parser("start", help="Start the simulation")
@@ -826,13 +923,11 @@ parser_stop.add_argument("--name", "-n", metavar="NAME", dest="name",
                          default="the-internet")
 parser_stop.set_defaults(func=stop_container)
 
-# map
-parser_map = subparsers.add_parser("map", help="Show a map of a project")
-parser_map.add_argument("--project", "-p", metavar="PROJECT", dest="project",
-                        default="NorthSec 2014")
-parser_map.add_argument("--level", "-l", metavar="LEVEL", dest="level",
-                        default=None, type=int, help="Max start level")
-parser_map.set_defaults(func=show_map)
+# update
+parser_update = subparsers.add_parser("update", help="Update the Internet")
+parser_update.add_argument("--name", "-n", metavar="NAME", dest="name",
+                           default="the-internet")
+parser_update.set_defaults(func=update_container)
 
 args = parser.parse_args()
 
