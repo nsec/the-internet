@@ -1,4 +1,7 @@
 Left,Right,Mac Left,Mac Right,Left priority,Right priority,Speed
+ctn-sfo,bgp-tp03,00:16:3e:cd:9d:32,fe:87:9b:9c:7f:6a,,,1000
+ctn-cto,bgp-oipcc01,00:16:3e:cd:9d:34,fe:87:9b:93:74:6b,,,1000
+
 bgp-51merica02,bgp-51merica01,fe:87:9b:9c:7c:6c,fe:a6:99:92:b8:38,,,1000
 bgp-51merica03,bgp-51merica01,fe:31:a0:7a:6d:1e,fe:ae:14:d4:b1:b8,,,10000
 bgp-51merica02,bgp-51merica03,fe:10:9e:3f:e6:bc,fe:f0:ca:ca:94:f2,,,10000

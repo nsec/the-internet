@@ -74,7 +74,7 @@ class InternetDB():
                     continue
 
                 # skip empty lines
-                if not row[0]:
+                if not row or not row[0]:
                     continue
 
                 left = get_router_data(cur, row[0])
@@ -144,9 +144,9 @@ class InternetDB():
 
                 # db: id, name, gps, fqdn, lxcname, uplink, asn, internal,
                 #     tier, prefix
-                cur.execute("INSERT INTO router VALUES(?,?,?,?,?,?,?,?,?,?)",
+                cur.execute("INSERT INTO router VALUES(?,?,?,?,?,?,?,?,?)",
                             (routerid, row[0], row[2], row[4], row[6], "",
-                             0, 4, row[5], row[9]))
+                             0, 4, row[5]))
                 routerid += 1
 
     def import_dns_csv(self, cur):
@@ -199,8 +199,6 @@ iface lo inet loopback
             fd.write("""    post-up tc qdisc add dev %s root netem """
                      """rate %smbit || true\n""" %
                      (link['iface'], link['speed']))
-        if rtrtier != 3:
-            return
 
         for link in get_links(cur, rtrlxcname, True):
             if not link['right_prefix']:
@@ -429,9 +427,13 @@ def gen_dnsmasq(database, target):
                 rtrid = record[0]
                 rtrfqdn = record[3]
                 rtrlxcname = record[4]
+                rtrtier = record[7]
                 rtrprefix = record[8].split("/")[0][0:9]
 
                 if not rtrfqdn or not rtrprefix:
+                    continue
+
+                if rtrtier == 4:
                     continue
 
                 random.seed(rtrid)
@@ -689,8 +691,13 @@ def start_simulation(args):
         os.environ['HOME'] = '/root'
 
         # Kill all containers
-        print(" ==> Stopping any running container")
+        print(" ==> Stopping any running routers")
         for router in lxc.list_containers(config_path="/internet",
+                                          as_object=True):
+            router.stop()
+
+        print(" ==> Stopping any running container")
+        for router in lxc.list_containers(config_path="/var/lib/lxc",
                                           as_object=True):
             router.stop()
 
@@ -765,6 +772,9 @@ resolvconf -u
     # Start the routers
     print(" ==> Starting the routers")
     execute(container, ["lxc-autostart", "-P", "/internet", "-g", "routers"])
+
+    print(" ==> Starting the other containers")
+    execute(container, ["lxc-autostart", "-g", "internet"])
 
 
 def stop_container(args):

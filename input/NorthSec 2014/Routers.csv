@@ -1,1 +1,3 @@
 Name,Country,"GPS (Long, Lat)","Prefix (48,56,64)",FQDN,Subnet,Lxc-name,Uplink,Ready,Required
+ctn-sfo,USA,37.77430/-122.42065,48,sfo.linuxcon.ctf,9000:4242:1000::/48,ctn-sfo,bgp-tp03,1,1
+ctn-cto,South Africa,-33.88467/18.52295,48,cto.linuxcon.ctf,9000:4242:1001::/48,ctn-cto,bgp-oipcc01,1,2
