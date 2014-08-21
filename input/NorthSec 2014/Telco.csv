@@ -221,23 +221,23 @@ Durkakistan Telekom,route03.karachi.durkaisp.net.ctf,bgp-durka03,3,9000:2251::/3
 GangnamISP,gw28.fission.subnet.ggs.kr.ctf,bgp-ggisp01,3,9000:3792::/32,1900,,37.76055/128.89469,0
 GangnamISP,gw28.wonju.subnet.ggs.kr.ctf,bgp-ggisp02,3,9000:3792::/32,1901,,37.34003/127.93871,0
 GangnamISP,gw28.seoul.subnet.ggs.kr.ctf,bgp-ggisp03,3,9000:3792::/32,1902,,37.54529/126.94204,0
-One internet per child Communications,core01.capetown.its-green.olpc.net.ctf,bgp-oipcc01,2,9000:0231::/32,600,,-33.88467/18.52295,2
-One internet per child Communications,core01.windhoek.its-green.olpc.net.ctf,bgp-oipcc02,2,9000:0231::/32,601,,-22.56107/17.10571,2
-One internet per child Communications,core01.luanda.its-green.olpc.net.ctf,bgp-oipcc03,2,9000:0231::/32,602,,-8.94544/13.33740,2
-One internet per child Communications,core01.libreville.its-green.olpc.net.ctf,bgp-oipcc04,2,9000:0231::/32,603,,0.42228/9.51416,2
-One internet per child Communications,core01.lagos.its-green.olpc.net.ctf,bgp-oipcc05,2,9000:0231::/32,604,,6.36853/3.47168,2
-One internet per child Communications,core01.bamako.its-green.olpc.net.ctf,bgp-oipcc06,2,9000:0231::/32,605,,12.60684/-7.95410,2
-One internet per child Communications,core01.dakar.its-green.olpc.net.ctf,bgp-oipcc07,2,9000:0231::/32,606,,14.74168/-17.18262,2
-One internet per child Communications,core01.casablanca.its-green.olpc.net.ctf,bgp-oipcc08,2,9000:0231::/32,607,,33.32938/-7.42676,2
-One internet per child Communications,core01.tunis.its-green.olpc.net.ctf,bgp-oipcc09,2,9000:0231::/32,608,,36.78179/10.23926,2
-One internet per child Communications,core01.cairo.its-green.olpc.net.ctf,bgp-oipcc10,2,9000:0231::/32,609,,29.88709/31.42090,2
-One internet per child Communications,core01.jerusalem.its-green.olpc.net.ctf,bgp-oipcc11,2,9000:0231::/32,610,,31.76940/35.21221,2
-One internet per child Communications,core01.khartoum.its-green.olpc.net.ctf,bgp-oipcc12,2,9000:0231::/32,611,,15.52184/32.58545,2
-One internet per child Communications,core01.juba.its-green.olpc.net.ctf,bgp-oipcc13,2,9000:0231::/32,612,,4.76736/31.66260,2
-One internet per child Communications,core01.nairobi.its-green.olpc.net.ctf,bgp-oipcc14,2,9000:0231::/32,613,,-1.37934/36.84814,2
-One internet per child Communications,core01.lusaka.its-green.olpc.net.ctf,bgp-oipcc15,2,9000:0231::/32,614,,-15.47023/28.27881,2
-One internet per child Communications,core01.pretoria.its-green.olpc.net.ctf,bgp-oipcc16,2,9000:0231::/32,615,,-25.73620/28.23486,2
-One internet per child Communications,core01.durban.its-green.olpc.net.ctf,bgp-oipcc17,2,9000:0231::/32,616,,-29.85553/30.95947,2
+One internet per child Communications,core01.capetown.its-green.oipcc.net.ctf,bgp-oipcc01,2,9000:0231::/32,600,,-33.88467/18.52295,2
+One internet per child Communications,core01.windhoek.its-green.oipcc.net.ctf,bgp-oipcc02,2,9000:0231::/32,601,,-22.56107/17.10571,2
+One internet per child Communications,core01.luanda.its-green.oipcc.net.ctf,bgp-oipcc03,2,9000:0231::/32,602,,-8.94544/13.33740,2
+One internet per child Communications,core01.libreville.its-green.oipcc.net.ctf,bgp-oipcc04,2,9000:0231::/32,603,,0.42228/9.51416,2
+One internet per child Communications,core01.lagos.its-green.oipcc.net.ctf,bgp-oipcc05,2,9000:0231::/32,604,,6.36853/3.47168,2
+One internet per child Communications,core01.bamako.its-green.oipcc.net.ctf,bgp-oipcc06,2,9000:0231::/32,605,,12.60684/-7.95410,2
+One internet per child Communications,core01.dakar.its-green.oipcc.net.ctf,bgp-oipcc07,2,9000:0231::/32,606,,14.74168/-17.18262,2
+One internet per child Communications,core01.casablanca.its-green.oipcc.net.ctf,bgp-oipcc08,2,9000:0231::/32,607,,33.32938/-7.42676,2
+One internet per child Communications,core01.tunis.its-green.oipcc.net.ctf,bgp-oipcc09,2,9000:0231::/32,608,,36.78179/10.23926,2
+One internet per child Communications,core01.cairo.its-green.oipcc.net.ctf,bgp-oipcc10,2,9000:0231::/32,609,,29.88709/31.42090,2
+One internet per child Communications,core01.jerusalem.its-green.oipcc.net.ctf,bgp-oipcc11,2,9000:0231::/32,610,,31.76940/35.21221,2
+One internet per child Communications,core01.khartoum.its-green.oipcc.net.ctf,bgp-oipcc12,2,9000:0231::/32,611,,15.52184/32.58545,2
+One internet per child Communications,core01.juba.its-green.oipcc.net.ctf,bgp-oipcc13,2,9000:0231::/32,612,,4.76736/31.66260,2
+One internet per child Communications,core01.nairobi.its-green.oipcc.net.ctf,bgp-oipcc14,2,9000:0231::/32,613,,-1.37934/36.84814,2
+One internet per child Communications,core01.lusaka.its-green.oipcc.net.ctf,bgp-oipcc15,2,9000:0231::/32,614,,-15.47023/28.27881,2
+One internet per child Communications,core01.pretoria.its-green.oipcc.net.ctf,bgp-oipcc16,2,9000:0231::/32,615,,-25.73620/28.23486,2
+One internet per child Communications,core01.durban.its-green.oipcc.net.ctf,bgp-oipcc17,2,9000:0231::/32,616,,-29.85553/30.95947,2
 M8 telecom,rtr-sydney01.gday.m8.net.ctf,bgp-mate01,2,9000:6574::/32,3300,,-33.97184/151.30371,2
 M8 telecom,rtr-melbourne01.gday.m8.net.ctf,bgp-mate02,2,9000:6574::/32,3301,,-37.81521/145.06348,2
 M8 telecom,rtr-perth01.gday.m8.net.ctf,bgp-mate03,2,9000:6574::/32,3302,,-32.13027/115.88379,2
