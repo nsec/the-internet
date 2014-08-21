@@ -1,3 +1,5 @@
 IPv6,NAME (must end with .ctf),LXC Name
 9000:4242:1000:1::1,sfo.linuxcon.ctf,ctn-sfo
+9000:4242:1000:1000::1,wifi.sfo.linuxcon.ctf,ctn-sfo
 9000:4242:1001:1::1,cto.linuxcon.ctf,ctn-cto
+9000:4242:1001:1000::1,wifi.cto.linuxcon.ctf,ctn-cto
