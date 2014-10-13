@@ -835,10 +835,10 @@ var %s = L.marker(%s, {icon: %s}).addTo(map);
 %s.on('mousedown', function(e) {
     var popup = L.popup()
         .setLatLng(e.latlng)
-        .setContent('%s<br/>%s<br/>Tier %s<br/>AS: %s')
+        .setContent('%s<br/>%s<br/>Tier %s<br/>AS: %s<br/>Container: %s')
         .openOn(map);
 });
-""" % (marker_name, name, fqdn, tier, asn))
+""" % (marker_name, name, fqdn, tier, asn, router[2]))
 
         for link in links:
             id_r = link[0]
