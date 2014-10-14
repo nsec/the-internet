@@ -953,7 +953,7 @@ parser_map.set_defaults(func=show_map)
 
 # shell
 parser_shell = subparsers.add_parser("shell",
-                                     help="Show a list of routers")
+                                     help="Get access to a shell on a router")
 parser_shell.add_argument("--name", "-n", metavar="NAME", dest="name",
                           default="the-internet")
 parser_shell.add_argument("router", metavar="ROUTER", default=None, nargs="?")
