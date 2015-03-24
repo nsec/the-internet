@@ -11,6 +11,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import time
 import webbrowser
 
 
@@ -513,9 +514,12 @@ def execute(container, cmd, cwd="/", stdin=sys.stdin):
 def start(container):
     container.start()
 
-    ips = container.get_ips(timeout=30, family="inet")
+    ips = container.get_ips(timeout=30)
     if not ips:
         raise Error("No IP address after 30s.")
+
+    # Once we have an IP, leave some time for DNS config
+    time.sleep(5)
 
 
 def create_container(args):
@@ -523,6 +527,10 @@ def create_container(args):
 
     if container.defined:
         raise Error("Container '%s' already exists." % args.name)
+
+    if args.config:
+        print(" ==> Loading user configuration")
+        container.load_config(os.path.expanduser(args.config))
 
     print(" ==> Creating container: %s" % args.name)
     container.create("download", 0, {'dist': "ubuntu",
@@ -533,6 +541,41 @@ def create_container(args):
     container.set_config_item("lxc.aa_profile", "unconfined")
     container.append_config_item("lxc.mount.auto", "cgroup:mixed")
     container.save_config()
+
+    if args.static_network:
+        fields = args.static_network.split(",")
+        if len(fields) < 5:
+            raise Error("Wrong static network configuration")
+
+        net_family = fields[0]
+        net_addr = fields[1]
+        net_mask = fields[2]
+        net_gw = fields[3]
+        net_dns = fields[4:]
+
+        def configure_network():
+            print(" ==> Configuring static networking")
+            with open("/etc/network/interfaces", "w+") as fd:
+                fd.write("# This file describes the network interfaces "
+                         "available on your system" """
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 %s static
+    address %s
+    netmask %s
+    gateway %s
+    dns-nameservers %s
+""" % (net_family, net_addr, net_mask, net_gw, " ".join(net_dns)))
+
+        container.start()
+        container.attach_wait(configure_network,
+                              env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
+        container.stop()
 
     print(" ==> Starting the container")
     start(container)
@@ -569,10 +612,14 @@ def create_container(args):
         os.environ['HOME'] = '/root'
 
         sub_container = lxc.Container("tpl-router", "/var/lib/lxc/")
-        sub_container.load_config("/etc/lxc/default.conf")
+        sub_container.set_config_item("lxc.network.0.type", "none")
+        sub_container.append_config_item(
+            "lxc.mount.entry",
+            "/run/resolvconf/resolv.conf etc/resolv.conf none bind,ro")
         sub_container.create("download", 0, {'dist': "ubuntu",
                                              'release': "trusty",
                                              'arch': "amd64"})
+        sub_container.save_config()
 
         print(" ==> Starting the sub-container")
         start(sub_container)
@@ -927,6 +974,11 @@ parser_create.add_argument("--name", "-n", metavar="NAME", dest="name",
                            default="the-internet")
 parser_create.add_argument("--use-daily", dest="daily", action="store_true",
                            default=False)
+parser_create.add_argument("--config", "-f",
+                           metavar="CONFIG", dest="config", default=None)
+parser_create.add_argument("--static-network",
+                           metavar="FAMILY,IP,NETMASK,GATEWAY,DNS",
+                           dest="static_network", default=None)
 parser_create.set_defaults(func=create_container)
 
 # destroy
