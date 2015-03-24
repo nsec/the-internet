@@ -676,7 +676,8 @@ def start_simulation(args):
 
     if not os.path.exists("/proc/net/ip6_tables_names"):
         print(" ==> Required IPv6 kernel modules seems missing on the host")
-        print("Running \"modprobe ip6_tables\" as root user should solve this problem")
+        print("Running \"modprobe ip6_tables\" as root "
+              "user should solve this problem")
         sys.exit(1)
 
     if not container.running:
