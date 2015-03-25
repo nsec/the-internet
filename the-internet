@@ -605,6 +605,11 @@ iface eth0 %s static
                         "/etc/quagga/daemons"])
     execute(container, ["rm", "-Rf", "/var/www/html"])
     execute(container, ["ln", "-s", "/internet/map", "/var/www/html"])
+    execute(container, ["stop", "lxc-net"])
+    execute(container, ["sed", "-i",
+                        "s/USE_LXC_BRIDGE=\"true\"/USE_LXC_BRIDGE=\"false\"/",
+                        "/etc/default/lxc-net"])
+    execute(container, ["start", "lxc-net"])
 
     def create_sub_container():
         print(" ==> Creating a router template sub-container")
@@ -787,8 +792,8 @@ def start_simulation(args):
     execute(container, """#!/bin/sh -ex
 echo 2 > /proc/sys/net/ipv6/conf/eth0/accept_ra
 echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
-ip link set dev eth0 down
-ip link set dev eth0 up
+ifdown eth0
+ifup eth0
 ip6tables -t nat -D POSTROUTING -o eth0 -j MASQUERADE 2>/dev/null || true
 ip6tables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 
@@ -802,7 +807,7 @@ ip -6 addr add 9000::1/128 dev lo
 
     execute(container, """#!/bin/sh -ex
 rm -f /run/resolvconf/interface/eth0.dhclient
-echo nameserver 9000::1 > /run/resolvconf/interface/the-internet
+echo nameserver 9000::1 > /run/resolvconf/interface/00-the-internet
 resolvconf -u
 """)
 
