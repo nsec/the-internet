@@ -484,7 +484,7 @@ def create_interfaces(database):
             raise Error("Failed to bring link up: %s" % link['iface'])
 
 
-def execute(container, cmd, cwd="/", stdin=sys.stdin):
+def execute(container, cmd, cwd="/", stdin=sys.stdin, ignore_failure=False):
     def run_command(args):
         cmd, cwd = args
 
@@ -507,7 +507,7 @@ def execute(container, cmd, cwd="/", stdin=sys.stdin):
                                    env_policy=lxc.LXC_ATTACH_CLEAR_ENV,
                                    stdin=stdin)
 
-    if retval != 0:
+    if retval != 0 and not ignore_failure:
         raise Error("Failed to run the command.")
 
 
@@ -539,6 +539,7 @@ def create_container(args):
 
     print(" ==> Configuring the container")
     container.set_config_item("lxc.aa_profile", "unconfined")
+    container.set_config_item("lxc.tty", "0")
     container.append_config_item("lxc.mount.auto", "cgroup:mixed")
     container.save_config()
 
@@ -605,11 +606,21 @@ iface eth0 %s static
                         "/etc/quagga/daemons"])
     execute(container, ["rm", "-Rf", "/var/www/html"])
     execute(container, ["ln", "-s", "/internet/map", "/var/www/html"])
-    execute(container, ["stop", "lxc-net"])
+    execute(container, ["stop", "lxc-net"], ignore_failure=True)
     execute(container, ["sed", "-i",
                         "s/USE_LXC_BRIDGE=\"true\"/USE_LXC_BRIDGE=\"false\"/",
                         "/etc/default/lxc-net"])
     execute(container, ["start", "lxc-net"])
+
+    def disable_services():
+        for service in ("console", "tty1", "tty2", "tty3", "tty4",
+                        "upstart-socket-bridge",
+                        "upstart-file-bridge"):
+            with open("/etc/init/%s.override" % service, "w+") as fd:
+                fd.write("manual\n")
+    print(" ==> Disable unneeded services")
+    container.attach_wait(disable_services,
+                          env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
 
     def create_sub_container():
         print(" ==> Creating a router template sub-container")
@@ -618,6 +629,7 @@ iface eth0 %s static
 
         sub_container = lxc.Container("tpl-router", "/var/lib/lxc/")
         sub_container.set_config_item("lxc.network.0.type", "none")
+        sub_container.set_config_item("lxc.tty", "0")
         sub_container.append_config_item(
             "lxc.mount.entry",
             "/run/resolvconf/resolv.conf etc/resolv.conf none bind,ro")
@@ -648,7 +660,7 @@ iface eth0 %s static
         print(" ==> Disable unneeded services")
         rootfs = sub_container.get_config_item("lxc.rootfs")
         for service in ("console", "tty1", "tty2", "tty3", "tty4",
-                        "cron", "ssh", "upstart-socket-bridge",
+                        "cron", "upstart-socket-bridge",
                         "upstart-file-bridge", "rsyslog"):
             with open("%s/etc/init/%s.override" %
                       (rootfs, service), "w+") as fd:
@@ -665,6 +677,10 @@ echo nameserver 9000::1 > /etc/resolvconf/resolv.conf.d/tail
 
     container.attach_wait(create_sub_container,
                           env_policy=lxc.LXC_ATTACH_CLEAR_ENV)
+
+    print(" ==> Restarting the container")
+    container.stop()
+    container.start()
 
 
 def destroy_container(args):
