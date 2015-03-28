@@ -537,6 +537,34 @@ def create_container(args):
                                      'release': "trusty",
                                      'arch': "amd64"})
 
+    if args.btrfs:
+        rootfs = container.get_config_item("lxc.rootfs")
+        stat = os.stat(rootfs)
+        cmd = ["lxc-usernsexec",
+               "-m", "u:0:%s:1" % os.geteuid(),
+               "-m", "g:0:%s:1" % os.getegid(),
+               "-m", "u:1:%s:65536" % stat.st_uid,
+               "-m", "g:1:%s:65536" % stat.st_gid,
+               "/bin/sh"]
+
+        with open(os.devnull, "w") as devnull:
+            btrfs = subprocess.Popen(cmd,
+                                     stdin=subprocess.PIPE,
+                                     stdout=devnull,
+                                     stderr=devnull,
+                                     universal_newlines=True)
+
+            btrfs.stdin.write("mv %s %s.orig\n" % (rootfs, rootfs))
+            btrfs.stdin.write("btrfs subvolume create %s\n" % rootfs)
+            btrfs.stdin.write("chown 1:1 %s\n" % rootfs)
+            btrfs.stdin.write("cp -R --reflink %s.orig/* %s/\n" %
+                              (rootfs, rootfs))
+            btrfs.stdin.write("rm -Rf %s.orig\n" % rootfs)
+            btrfs.stdin.close()
+
+            if btrfs.wait() != 0:
+                raise Error("Failed to setup btrfs")
+
     print(" ==> Configuring the container")
     container.set_config_item("lxc.aa_profile", "unconfined")
     container.set_config_item("lxc.tty", "0")
@@ -995,6 +1023,8 @@ parser_create.add_argument("--name", "-n", metavar="NAME", dest="name",
                            default="the-internet")
 parser_create.add_argument("--use-daily", dest="daily", action="store_true",
                            default=False)
+parser_create.add_argument("--btrfs", dest="btrfs", default=False,
+                           action="store_true")
 parser_create.add_argument("--config", "-f",
                            metavar="CONFIG", dest="config", default=None)
 parser_create.add_argument("--static-network",
