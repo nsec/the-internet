@@ -380,21 +380,48 @@ def gen_config(database, target, startgroup=0):
 
         if rtrtier == 4:
             continue
-        try:
-            shutil.rmtree("%s/%s" % (target, rtrlxcname))
-        except:
-            pass
-        os.mkdir("%s/%s" % (target, rtrlxcname))
-        os.mkdir("%s/%s/overlay/" % (target, rtrlxcname))
-        os.mkdir("%s/%s/etc/" % (target, rtrlxcname))
-        gen_zebra(rtrlxcname, target)
-        gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, target)
-        if rtrlxcname != "legacy":
+
+        if rtrlxcname.startswith("bgp-"):
+            try:
+                shutil.rmtree("%s/%s" % (target, rtrlxcname))
+            except:
+                pass
+
+            os.mkdir("%s/%s" % (target, rtrlxcname))
+            os.mkdir("%s/%s/overlay/" % (target, rtrlxcname))
+            os.mkdir("%s/%s/etc/" % (target, rtrlxcname))
+            gen_zebra(rtrlxcname, target)
+            gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, target)
             gen_interfaces(cur, rtrlxcname, rtrid, rtrprefix, rtrtier,
                            rtrfqdn, target)
             gen_hosts(rtrlxcname, target)
             gen_hostname(rtrlxcname, target)
             gen_lxc_config(cur, rtrlxcname, target)
+
+        elif rtrlxcname == "legacy":
+            try:
+                shutil.rmtree("%s/%s" % (target, rtrlxcname))
+            except:
+                pass
+
+            os.mkdir("%s/%s" % (target, rtrlxcname))
+            os.mkdir("%s/%s/overlay/" % (target, rtrlxcname))
+            os.mkdir("%s/%s/etc/" % (target, rtrlxcname))
+            gen_zebra(rtrlxcname, target)
+            gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, target)
+
+        elif rtrlxcname.startswith("ctn-"):
+            if not os.path.exists("/var/lib/lxc/%s/config" % rtrlxcname):
+                raise Error("User managed router %s doesn't exist."
+                            % rtrlxcname)
+
+            gen_zebra(rtrlxcname, "/var/lib/lxc/")
+            gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, "/var/lib/lxc/")
+            gen_interfaces(cur, rtrlxcname, rtrid, rtrprefix, rtrtier,
+                           rtrfqdn, "/var/lib/lxc/")
+            gen_hosts(rtrlxcname, "/var/lib/lxc/")
+            gen_hostname(rtrlxcname, "/var/lib/lxc/")
+            gen_lxc_config(cur, rtrlxcname, "/var/lib/lxc/")
 
 
 def gen_dnsmasq(database, target):
