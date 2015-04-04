@@ -35,7 +35,7 @@ class InternetDB():
         self.import_links_csv(cur)
 
         cur.execute("DROP TABLE IF EXISTS dns")
-        cur.execute("CREATE TABLE dns (ipv6 TEXT, name TEXT)")
+        cur.execute("CREATE TABLE dns (address TEXT, name TEXT, type TEXT)")
         self.import_dns_csv(cur)
 
     def dist_latency(self, origin, destination):
@@ -164,10 +164,10 @@ class InternetDB():
                 if not row[0] or not row[1] or row[1][0] == "(":
                     continue
 
-                # csv: ipv6-0, name-1, lxc-name-2
-                # db: ipv6, name
-                cur.execute("INSERT INTO dns VALUES(?,?)",
-                            (row[0].strip(), row[1].strip()))
+                # csv: address-0, name-1, lxc-name-2, type-3
+                # db: address, name, type
+                cur.execute("INSERT INTO dns VALUES(?,?,?)",
+                            (row[0].strip(), row[1].strip(), row[3].strip()))
 
 
 class Error(Exception):
@@ -443,9 +443,16 @@ def gen_dnsmasq(database, target):
 
         if records:
             for record in records:
-                fd.write("address=/%s./%s\n" % (record[1], record[0]))
-                rdns = netaddr.IPAddress(record[0]).reverse_dns
-                fd.write("ptr-record=%s,%s.\n" % (rdns, record[1]))
+                # 0: address, 1: name, 2: type
+                dnsaddress = record[0]
+                dnsname = record[1]
+                dnstype = record[2]
+                if dnstype == "AAAA":
+                    fd.write("address=/%s./%s\n" % (dnsname, dnsaddress))
+                    rdns = netaddr.IPAddress(dnsaddress).reverse_dns
+                    fd.write("ptr-record=%s,%s.\n" % (rdns, dnsname))
+                else:
+                    continue
 
         cur.execute("select * from router")
         records = cur.fetchall()
