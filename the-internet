@@ -252,6 +252,7 @@ iface %s inet6 static
     address FIXME
     netmask FIXME
     gateway %s
+    dns-nameservers 9000::1
 """ % (link['iface'], link['iface'], ll))
 
 
