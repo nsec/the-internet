@@ -244,13 +244,10 @@ iface lo inet loopback
 
 """)
 
-        link = get_links(cur, rtrlxcname, True)
-        if len(link) == 0:
-            return
-        link = link[0]
-        mac = netaddr.EUI(link["mac_right"])
-        ll = str(mac.ipv6_link_local())
-        fd.write("""auto %s
+        for link in get_links(cur, rtrlxcname, True):
+            mac = netaddr.EUI(link["mac_right"])
+            ll = str(mac.ipv6_link_local())
+            fd.write("""auto %s
 iface %s inet6 static
     address FIXME
     netmask FIXME
@@ -408,7 +405,7 @@ lxc.arch = amd64
 lxc.utsname = %s
 lxc.rootfs = /var/lib/lxc/%s/rootfs
 
-""" % (rtrlxcname, target))
+""" % (rtrlxcname, rtrlxcname))
         fd.write("""
 # Auto-start
 lxc.start.auto = 1
