@@ -231,6 +231,33 @@ enable password zebra%s\n""" % (rtrlxcname, random.randint(9999, 99999999),
                                 random.randint(9999, 99999999)))
 
 
+def gen_interfaces_tier4(cur, rtrlxcname, rtrid, rtrprefix,
+                         rtrtier, rtrfqdn, target):
+    try:
+        os.mkdir("%s/etc/network/" % (target))
+    except FileExistsError:
+        pass
+    with open("%s/etc/network/interfaces" %
+              (target), "w") as fd:
+        fd.write("""auto lo
+iface lo inet loopback
+
+""")
+
+        link = get_links(cur, rtrlxcname, True)
+        if len(link) == 0:
+            return
+        link = link[0]
+        mac = netaddr.EUI(link["mac_right"])
+        ll = str(mac.ipv6_link_local())
+        fd.write("""auto %s
+iface %s inet6 static
+    address FIXME
+    netmask FIXME
+    gateway %s
+""" % (link['iface'], link['iface'], ll))
+
+
 def get_router_data(cur, name):
     rtr = {}
     cur.execute("select id, name, gps, fqdn, lxcname, asn, internal, tier, "
@@ -368,6 +395,37 @@ lxc.network.hwaddr = %s
 """ % (link['iface'], link['iface'], link['mac_left']))
 
 
+def gen_tier4_lxc_config(cur, rtrlxcname, target):
+    with open("%s/config" % (target), "w+") as fd:
+        fd.write("""# Auto-generated, do not manually edit.
+
+# Distribution configuration
+lxc.include = /usr/share/lxc/config/ubuntu.common.conf
+lxc.include = /usr/share/lxc/config/ubuntu.userns.conf
+lxc.arch = amd64
+
+# Container specific configuration
+lxc.utsname = %s
+lxc.rootfs = /var/lib/lxc/%s/rootfs
+
+""" % (rtrlxcname, target))
+        fd.write("""
+# Auto-start
+lxc.start.auto = 1
+
+# Network configuration
+""")
+
+        for link in get_links(cur, rtrlxcname, True):
+            fd.write("""lxc.network.type = phys
+lxc.network.flags = up
+lxc.network.name = %s
+lxc.network.link = %s
+lxc.network.hwaddr = %s
+
+""" % (link['iface'], link['iface'], link['mac_left']))
+
+
 def gen_ctn_lxc_config(cur, rtrlxcname, target):
     with open("%s/config" % (target), "w+") as fd:
         fd.write("""# Auto-generated, do not manually edit.
@@ -416,9 +474,32 @@ def gen_config(database, target, startgroup=0):
         rtrfqdn = rtr[3]
 
         if rtrtier == 4:
-            continue
+            # Prepare the network configuration for tier 4 machines in /tmp
+            # the admin can copy it manually to the containers.
+            # In the Links CSV, the tier 4 must be on the right of its uplink.
+            try:
+                os.mkdir("/tmp/%s" % (rtrlxcname))
+            except FileExistsError:
+                pass
+            try:
+                os.mkdir("/tmp/%s/rootfs" % (rtrlxcname))
+            except FileExistsError:
+                pass
+            try:
+                os.mkdir("/tmp/%s/rootfs/etc" % (rtrlxcname))
+            except FileExistsError:
+                pass
+            try:
+                os.mkdir("/tmp/%s/rootfs/etc/network" % (rtrlxcname))
+            except FileExistsError:
+                pass
 
-        if rtrlxcname.startswith("bgp-"):
+            target_root = "/tmp/%s/rootfs" % (rtrlxcname)
+            gen_interfaces_tier4(cur, rtrlxcname, rtrid, rtrprefix, rtrtier,
+                                 rtrfqdn, target_root)
+            gen_tier4_lxc_config(cur, rtrlxcname, "/tmp/%s" % rtrlxcname)
+
+        elif rtrlxcname.startswith("bgp-"):
             try:
                 shutil.rmtree("%s/%s" % (target, rtrlxcname))
             except:
