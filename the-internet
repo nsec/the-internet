@@ -409,6 +409,7 @@ lxc.rootfs = /var/lib/lxc/%s/rootfs
         fd.write("""
 # Auto-start
 lxc.start.auto = 1
+lxc.group = internet
 
 # Network configuration
 """)
@@ -440,6 +441,7 @@ lxc.rootfs = %s/rootfs
         fd.write("""
 # Auto-start
 lxc.start.auto = 1
+lxc.group = internet
 
 # Network configuration
 """)
