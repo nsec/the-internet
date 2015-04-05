@@ -389,9 +389,7 @@ lxc.start.auto = 1
 # Network configuration
 """)
 
-        print("links for %s", rtrlxcname)
         for link in get_links(cur, rtrlxcname, True):
-            print(" %s", link)
             fd.write("""lxc.network.type = phys
 lxc.network.flags = up
 lxc.network.name = %s
