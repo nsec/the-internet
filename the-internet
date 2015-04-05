@@ -176,7 +176,10 @@ class Error(Exception):
 
 def gen_interfaces(cur, rtrlxcname, rtrid, rtrprefix,
                    rtrtier, rtrfqdn, target):
-    os.mkdir("%s/%s/etc/network/" % (target, rtrlxcname))
+    try:
+        os.mkdir("%s/etc/network/" % (target))
+    except FileExistsError:
+        pass
     random.seed(rtrid)
     ip = netaddr.ip
     strprefix = "%s:%s:%s:%s:%s:%s" % (
@@ -185,8 +188,8 @@ def gen_interfaces(cur, rtrlxcname, rtrid, rtrprefix,
         random.randint(0, 4095))
     ipv6 = str(ip.IPAddress(strprefix).ipv6())
 
-    with open("%s/%s/etc/network/interfaces" %
-              (target, rtrlxcname), "w") as fd:
+    with open("%s/etc/network/interfaces" %
+              (target), "w") as fd:
         fd.write("""auto lo
 iface lo inet loopback
     post-up ip -6 addr add dev lo %s/128
@@ -217,8 +220,11 @@ iface %s inet6 manual
 
 
 def gen_zebra(rtrlxcname, target):
-    os.mkdir("%s/%s/etc/quagga/" % (target, rtrlxcname))
-    with open("%s/%s/etc/quagga/zebra.conf" % (target, rtrlxcname), "w") as fd:
+    try:
+        os.mkdir("%s/etc/quagga/" % (target))
+    except FileExistsError:
+        pass
+    with open("%s/etc/quagga/zebra.conf" % (target), "w") as fd:
         fd.write("""hostname %s
 password zebra%s
 enable password zebra%s\n""" % (rtrlxcname, random.randint(9999, 99999999),
@@ -281,7 +287,7 @@ def gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, target):
     if rtridv4 == "0.0.0.0":
         rtridv4 = "123.123.123.123"
 
-    with open("%s/%s/etc/quagga/bgpd.conf" % (target, rtrlxcname), "w") as fd:
+    with open("%s/etc/quagga/bgpd.conf" % (target), "w") as fd:
         fd.write("""hostname %s
 password zebra%s
 
@@ -308,7 +314,7 @@ router bgp %s
 
 
 def gen_hosts(rtrlxcname, target):
-    with open("%s/%s/etc/hosts" % (target, rtrlxcname), "w") as fd:
+    with open("%s/etc/hosts" % (target), "w") as fd:
         fd.write("""127.0.0.1    localhost
 127.0.1.1    %s
 
@@ -321,12 +327,12 @@ ff02::2 ip6-allrouters\n""" % rtrlxcname)
 
 
 def gen_hostname(rtrlxcname, target):
-    with open("%s/%s/etc/hostname" % (target, rtrlxcname), "w") as fd:
+    with open("%s/etc/hostname" % (target), "w") as fd:
         fd.write("%s\n" % rtrlxcname)
 
 
 def gen_lxc_config(cur, rtrlxcname, target):
-    with open("%s/%s/config" % (target, rtrlxcname), "w+") as fd:
+    with open("%s/config" % (target), "w+") as fd:
         fd.write("""# Auto-generated, do not manually edit.
 
 # Distribution configuration
@@ -362,6 +368,39 @@ lxc.network.hwaddr = %s
 """ % (link['iface'], link['iface'], link['mac_left']))
 
 
+def gen_ctn_lxc_config(cur, rtrlxcname, target):
+    with open("%s/config" % (target), "w+") as fd:
+        fd.write("""# Auto-generated, do not manually edit.
+
+# Distribution configuration
+lxc.include = /usr/share/lxc/config/ubuntu.common.conf
+lxc.include = /usr/share/lxc/config/ubuntu.userns.conf
+lxc.arch = amd64
+
+# Container specific configuration
+lxc.utsname = %s
+lxc.rootfs = %s/rootfs
+
+""" % (rtrlxcname, target))
+        fd.write("""
+# Auto-start
+lxc.start.auto = 1
+
+# Network configuration
+""")
+
+        print("links for %s", rtrlxcname)
+        for link in get_links(cur, rtrlxcname, True):
+            print(" %s", link)
+            fd.write("""lxc.network.type = phys
+lxc.network.flags = up
+lxc.network.name = %s
+lxc.network.link = %s
+lxc.network.hwaddr = %s
+
+""" % (link['iface'], link['iface'], link['mac_left']))
+
+
 def gen_config(database, target, startgroup=0):
     cur = database.cursor()
     cur.execute("select * from router")
@@ -387,16 +426,17 @@ def gen_config(database, target, startgroup=0):
             except:
                 pass
 
-            os.mkdir("%s/%s" % (target, rtrlxcname))
-            os.mkdir("%s/%s/overlay/" % (target, rtrlxcname))
-            os.mkdir("%s/%s/etc/" % (target, rtrlxcname))
-            gen_zebra(rtrlxcname, target)
-            gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, target)
+            target_root = "%s/%s" % (target, rtrlxcname)
+            os.mkdir(target_root)
+            os.mkdir("%s/overlay/" % (target_root))
+            os.mkdir("%s/etc/" % (target_root))
+            gen_zebra(rtrlxcname, target_root)
+            gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, target_root)
             gen_interfaces(cur, rtrlxcname, rtrid, rtrprefix, rtrtier,
-                           rtrfqdn, target)
-            gen_hosts(rtrlxcname, target)
-            gen_hostname(rtrlxcname, target)
-            gen_lxc_config(cur, rtrlxcname, target)
+                           rtrfqdn, target_root)
+            gen_hosts(rtrlxcname, target_root)
+            gen_hostname(rtrlxcname, target_root)
+            gen_lxc_config(cur, rtrlxcname, target_root)
 
         elif rtrlxcname == "legacy":
             try:
@@ -404,24 +444,26 @@ def gen_config(database, target, startgroup=0):
             except:
                 pass
 
-            os.mkdir("%s/%s" % (target, rtrlxcname))
-            os.mkdir("%s/%s/overlay/" % (target, rtrlxcname))
-            os.mkdir("%s/%s/etc/" % (target, rtrlxcname))
-            gen_zebra(rtrlxcname, target)
-            gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, target)
+            target_root = "%s/%s" % (target, rtrlxcname)
+            os.mkdir(target_root)
+            os.mkdir("%s/overlay/" % (target_root))
+            os.mkdir("%s/etc/" % (target_root))
+            gen_zebra(rtrlxcname, target_root)
+            gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, target_root)
 
         elif rtrlxcname.startswith("ctn-"):
             if not os.path.exists("/var/lib/lxc/%s/config" % rtrlxcname):
                 raise Error("User managed router %s doesn't exist."
                             % rtrlxcname)
 
-            gen_zebra(rtrlxcname, "/var/lib/lxc/")
-            gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, "/var/lib/lxc/")
+            target_root = "/var/lib/lxc/%s/rootfs" % (rtrlxcname)
+            gen_zebra(rtrlxcname, target_root)
+            gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, target_root)
             gen_interfaces(cur, rtrlxcname, rtrid, rtrprefix, rtrtier,
-                           rtrfqdn, "/var/lib/lxc/")
-            gen_hosts(rtrlxcname, "/var/lib/lxc/")
-            gen_hostname(rtrlxcname, "/var/lib/lxc/")
-            gen_lxc_config(cur, rtrlxcname, "/var/lib/lxc/")
+                           rtrfqdn, target_root)
+            gen_hosts(rtrlxcname, target_root)
+            gen_hostname(rtrlxcname, target_root)
+            gen_ctn_lxc_config(cur, rtrlxcname, "/var/lib/lxc/%s" % rtrlxcname)
 
 
 def gen_dnsmasq(database, target):
