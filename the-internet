@@ -366,10 +366,11 @@ lxc.include = /usr/share/lxc/config/ubuntu.userns.conf
 lxc.arch = amd64
 
 # Container specific configuration
-lxc.rootfs = overlayfs:/var/lib/lxc/tpl-router/rootfs:/internet/%s/overlay/
+lxc.rootfs = /internet/%s/rootfs/
+lxc.hook.pre-mount = /internet/%s/pre-mount.hook
 lxc.utsname = %s
 
-""" % (rtrlxcname, rtrlxcname))
+""" % (rtrlxcname, rtrlxcname, rtrlxcname))
         for path in ("etc/hostname", "etc/hosts", "etc/network/interfaces",
                      "etc/quagga/bgpd.conf", "etc/quagga/zebra.conf"):
             fd.write("lxc.mount.entry = /internet/%s/%s %s none bind\n"
@@ -507,7 +508,17 @@ def gen_config(database, target, startgroup=0):
 
             target_root = "%s/%s" % (target, rtrlxcname)
             os.mkdir(target_root)
+            os.mkdir("%s/rootfs" % (target_root))
+            os.mkdir("%s/workdir" % (target_root))
             os.mkdir("%s/overlay/" % (target_root))
+            with open("%s/pre-mount.hook" % (target_root), "w+") as fd:
+                fd.write("""#!/bin/sh
+mount -t overlay none ${LXC_ROOTFS_PATH} \\
+    -o lowerdir=%s,upperdir=%s,workdir=%s
+""" % ("/var/lib/lxc/tpl-router/rootfs", "/internet/%s/overlay" % rtrlxcname,
+                                         "/internet/%s/workdir" % rtrlxcname))
+            os.chmod("%s/pre-mount.hook" % (target_root), 0o755)
+
             os.mkdir("%s/etc/" % (target_root))
             gen_zebra(rtrlxcname, target_root)
             gen_bgpd(cur, rtrlxcname, rtrid, rtrasn, target_root)
@@ -605,6 +616,125 @@ def gen_dnsmasq(database, target):
                 fd.write("address=/%s./%s\n" % (rtrfqdn, ipv6))
                 rdns = netaddr.IPAddress(ipv6).reverse_dns
                 fd.write("ptr-record=%s,%s.\n" % (rdns, rtrfqdn))
+
+
+def gen_sambadns(database, target):
+    cur = database.cursor()
+    cur.execute("select * from dns")
+    records = cur.fetchall()
+
+    with open("/tmp/dns.sh", "w+") as fd:
+        fd.write("#!/bin/sh\n")
+        fd.write("samba-tool dns zonedelete localhost ctf\n")
+        fd.write("samba-tool dns zonecreate localhost ctf\n")
+        fd.write("samba-tool dns zonedelete localhost 0.0.0.9.ip6.arpa\n")
+        fd.write("samba-tool dns zonecreate localhost 0.0.0.9.ip6.arpa\n")
+
+        if records:
+            for record in records:
+                # 0: address, 1: name, 2: type
+                dnsaddress = record[0]
+                dnsname = record[1]
+                dnstype = record[2]
+                if dnstype == "AAAA":
+                    fd.write("samba-tool dns add localhost ctf %s. "
+                             "AAAA %s\n" % (dnsname, dnsaddress))
+                    rdns = netaddr.IPAddress(dnsaddress).reverse_dns
+                    fd.write("samba-tool dns add localhost 0.0.0.9.ip6.arpa "
+                             "%s PTR %s.\n" % (rdns, dnsname))
+                elif dnstype == "CNAME":
+                    fd.write("samba-tool dns add localhost ctf %s. "
+                             "CNAME %s\n" % (dnsaddress, dnsname))
+                else:
+                    continue
+
+        cur.execute("select * from router")
+        records = cur.fetchall()
+
+        if records:
+            for record in records:
+                rtrid = record[0]
+                rtrfqdn = record[3]
+                rtrlxcname = record[4]
+                rtrtier = record[7]
+                rtrprefix = record[8].split("/")[0][0:9]
+
+                if not rtrfqdn or not rtrprefix:
+                    continue
+
+                if rtrtier == 4:
+                    continue
+
+                random.seed(rtrid)
+                strprefix = "%s:%s:%s:%s:%s:%s" % (
+                    rtrprefix, "dead:beef", random.randint(0, 4095),
+                    random.randint(0, 4095), random.randint(0, 4095),
+                    random.randint(0, 4095))
+                ipv6 = str(netaddr.ip.IPAddress(strprefix).ipv6())
+
+                if rtrlxcname == "legacy":
+                    ipv6 = "9000::1"
+
+                fd.write("samba-tool dns add localhost ctf "
+                         "%s. AAAA %s\n" % (rtrfqdn, ipv6))
+                rdns = netaddr.IPAddress(ipv6).reverse_dns
+                fd.write("samba-tool dns add localhost 0.0.0.9.ip6.arpa "
+                         "%s PTR %s.\n" % (rdns, rtrfqdn))
+
+
+def gen_dns(database, target):
+    # FIXME: option to choose the DNS to use, for now just generate the two
+    gen_dnsmasq(database, target)
+    gen_sambadns(database, target)
+
+
+def gen_pingscript(database, target):
+    cur = database.cursor()
+    cur.execute("select * from dns")
+    records = cur.fetchall()
+
+    with open("/tmp/ping.sh", "w+") as fd:
+        if records:
+            for record in records:
+                # 0: address, 1: name, 2: type
+                dnsaddress = record[0]
+                dnsname = record[1]
+                fd.write("echo -n %s...; ping6 -c1 -W1 %s >/dev/null "
+                         "&& echo OK || echo FAILED\n" %
+                         (dnsname, dnsname))
+                fd.write("echo -n %s...; ping6 -c1 -W1 %s >/dev/null "
+                         "&& echo OK || echo FAILED\n" %
+                         (dnsaddress, dnsaddress))
+
+        cur.execute("select * from router")
+        records = cur.fetchall()
+
+        if records:
+            for record in records:
+                rtrid = record[0]
+                rtrfqdn = record[3]
+                rtrlxcname = record[4]
+                rtrtier = record[7]
+                rtrprefix = record[8].split("/")[0][0:9]
+
+                if not rtrfqdn or not rtrprefix:
+                    continue
+
+                if rtrtier == 4:
+                    continue
+
+                random.seed(rtrid)
+                strprefix = "%s:%s:%s:%s:%s:%s" % (
+                    rtrprefix, "dead:beef", random.randint(0, 4095),
+                    random.randint(0, 4095), random.randint(0, 4095),
+                    random.randint(0, 4095))
+                ipv6 = str(netaddr.ip.IPAddress(strprefix).ipv6())
+
+                if rtrlxcname == "legacy":
+                    ipv6 = "9000::1"
+                fd.write("echo -n %s...; ping6 -c1 -W1 %s >/dev/null && "
+                         "echo OK || echo FAILED\n" %
+                         (rtrfqdn, ipv6))
 
 
 def create_interfaces(database):
@@ -970,13 +1100,20 @@ def start_simulation(args):
         # Remove all config
         if os.path.exists("/internet"):
             print(" ==> Flushing existing configuration")
+            if os.path.ismount("/internet"):
+                subprocess.call(["umount", "/internet"])
+
             shutil.rmtree("/internet")
         os.mkdir("/internet")
+        subprocess.call(["mount", "-t", "tmpfs", "none", "/internet",
+                         "-o", "defaults,mode=0755"])
 
         # Generate the config
         print(" ==> Generating new configuration")
         gen_config(database.con, "/internet")
-        gen_dnsmasq(database.con, "/internet")
+        gen_dns(database.con, "/internet")
+
+        gen_pingscript(database.con, "/internet")
 
         # Create the interfaces
         print(" ==> Creating the veth interfaces")
@@ -1168,6 +1305,8 @@ def shell_router(args):
 
     container.attach_wait(attach_sub_container)
 
+# Make everything relative to the script
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 parser = argparse.ArgumentParser(description="Internet generator")
 subparsers = parser.add_subparsers()
@@ -1197,7 +1336,7 @@ parser_destroy.set_defaults(func=destroy_container)
 parser_map = subparsers.add_parser("list-routers",
                                    help="Show a list of routers")
 parser_map.add_argument("--project", "-p", metavar="PROJECT", dest="project",
-                        default="NorthSec 2014")
+                        default="NorthSec 2015")
 parser_map.add_argument("--level", "-l", metavar="LEVEL", dest="level",
                         default=None, type=int, help="Max start level")
 parser_map.set_defaults(func=list_routers)
@@ -1205,7 +1344,7 @@ parser_map.set_defaults(func=list_routers)
 # map
 parser_map = subparsers.add_parser("map", help="Show a map of a project")
 parser_map.add_argument("--project", "-p", metavar="PROJECT", dest="project",
-                        default="NorthSec 2014")
+                        default="NorthSec 2015")
 parser_map.add_argument("--level", "-l", metavar="LEVEL", dest="level",
                         default=None, type=int, help="Max start level")
 parser_map.set_defaults(func=show_map)
@@ -1223,7 +1362,7 @@ parser_start = subparsers.add_parser("start", help="Start the simulation")
 parser_start.add_argument("--name", "-n", metavar="NAME", dest="name",
                           default="the-internet")
 parser_start.add_argument("--project", "-p", metavar="PROJECT", dest="project",
-                          default="NorthSec 2014")
+                          default="NorthSec 2015")
 parser_start.add_argument("--level", "-l", metavar="LEVEL", dest="level",
                           default=None, type=int, help="Max start level")
 parser_start.set_defaults(func=start_simulation)
