@@ -21,8 +21,9 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 Authors:
-    Copyright (c) 2013-2014 Stéphane Graber <stgraber@nsec.io>
-    Copyright (c) 2013-2014 Julien Desfossez <jdesfossez@nsec.io>
-    Copyright (c) 2013-2014 David Goulet <dgoulet@nsec.io>
+    Copyright (c) 2013-2016 Stéphane Graber <stgraber@nsec.io>
+    Copyright (c) 2013-2016 Julien Desfossez <jdesfossez@nsec.io>
+    Copyright (c) 2013-2016 David Goulet <dgoulet@nsec.io>
+    Copyright (c) 2016 Michael Jeanson <mjeanson@nsec.io>
 
     Copyright (c) 2014 Canonical Ltd. <stgraber@ubuntu.com>
