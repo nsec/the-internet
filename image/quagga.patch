@@ -1,0 +1,13 @@
+--- package/quagga/quagga.mk.orig	2016-03-21 23:22:51.921369849 -0400
++++ package/quagga/quagga.mk	2016-03-21 23:13:30.609005809 -0400
+@@ -10,7 +10,9 @@
+ QUAGGA_DEPENDENCIES = host-gawk
+ QUAGGA_LICENSE = GPLv2+
+ QUAGGA_LICENSE_FILES = COPYING
+-QUAGGA_CONF_OPTS = --program-transform-name=''
++QUAGGA_CONF_OPTS = --program-transform-name='' \
++                   --sysconfdir=/etc/quagga \
++                   --localstatedir=/var/run/quagga
+ # 0002-configure-fix-static-linking-with-readline.patch
+ QUAGGA_AUTORECONF = YES
+ 
