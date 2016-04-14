@@ -1,0 +1,30 @@
+VERSION="2016.02"
+
+# Cleanup
+rm -Rf image-rootfs.tar.xz image-meta.tar.xz build/
+mkdir -p build/
+
+# Download
+wget https://buildroot.org/downloads/buildroot-${VERSION}.tar.bz2 -q -O - \
+    | tar jxvf - --strip-components=1 -C build/
+
+# Build
+cd build/
+patch -p0 < ../quagga.patch
+make BR2_EXTERNAL=../ nsec_defconfig
+make BR2_JLEVEL=$(nproc)
+
+cat << EOF > metadata.yaml
+architecture: $(uname -m)
+creation_date: $(date +%s)
+properties:
+  description: the-internet router image
+EOF
+tar -cf metadata.tar metadata.yaml
+cd ..
+
+# Store images
+cp build/output/images/rootfs.tar image-rootfs.tar
+cp build/metadata.tar image-meta.tar
+xz -9 image-rootfs.tar
+xz -9 image-meta.tar
