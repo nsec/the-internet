@@ -14,13 +14,35 @@ patch -p0 < ../quagga.patch
 make BR2_EXTERNAL=../ nsec_defconfig
 make BR2_JLEVEL=$(nproc)
 
+cp -R ../templates .
 cat << EOF > metadata.yaml
 architecture: $(uname -m)
 creation_date: $(date +%s)
 properties:
   description: the-internet router image
+templates:
+  /etc/hostname:
+    when:
+      - start
+    template: hostname.tpl
+  /etc/hosts:
+    when:
+      - start
+    template: hosts.tpl
+  /etc/network/interfaces:
+    when:
+      - start
+    template: interfaces.tpl
+  /etc/quagga/bgpd.conf:
+    when:
+      - start
+    template: bgpd.conf.tpl
+  /etc/quagga/zebra.conf:
+    when:
+      - start
+    template: zebra.conf.tpl
 EOF
-tar -cf metadata.tar metadata.yaml
+tar -cf metadata.tar metadata.yaml templates
 cd ..
 
 # Store images
