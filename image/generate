@@ -42,7 +42,7 @@ templates:
       - start
     template: zebra.conf.tpl
 EOF
-tar -cf metadata.tar metadata.yaml templates
+tar -cf metadata.tar --owner=0 --group=0 metadata.yaml templates
 cd ..
 
 # Store images
