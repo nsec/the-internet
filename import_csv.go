@@ -128,7 +128,7 @@ func importFromCSV(path string) (Routers, error) {
 				RouterInterfaceRoute{Subnet: netSubnet}}}
 
 		// Quagga
-		routerid := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", rand.Int31n(255), rand.Int31n(255), rand.Int31n(255), rand.Int31n(255)))
+		routerid := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", rand.Int31n(223), rand.Int31n(255), rand.Int31n(255), rand.Int31n(255)))
 		router.Configuration.RouterID = &routerid
 		router.Configuration.PasswordLogin = randStringN(rand.Intn(32-16) + 16)
 		router.Configuration.PasswordEnable = randStringN(rand.Intn(32-16) + 16)
