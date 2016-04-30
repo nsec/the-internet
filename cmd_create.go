@@ -91,6 +91,7 @@ func cmdCreate(c *lxd.Client, args []string) error {
 		if router.Tier >= 1 && router.Tier <= 3 {
 			interfaces = fmt.Sprintf(`auto lo
 iface lo inet loopback
+    pre-up echo 0 > /proc/sys/net/ipv6/conf/all/accept_dad
     post-up echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
 
 auto local
