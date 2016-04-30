@@ -91,27 +91,27 @@ func cmdCreate(c *lxd.Client, args []string) error {
 		if router.Tier >= 1 && router.Tier <= 3 {
 			interfaces = fmt.Sprintf(`auto lo
 iface lo inet loopback
-    pre-up echo 0 > /proc/sys/net/ipv6/conf/all/accept_dad
-    post-up echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
+    pre-up echo 0 > /proc/sys/net/ipv6/conf/all/accept_dad || true
+    post-up echo 1 > /proc/sys/net/ipv6/conf/all/forwarding || true
 
 auto local
 iface local inet6 manual
-    pre-up ip link add local type dummy
-    pre-up ip link set local up
+    pre-up ip link add local type dummy || true
+    pre-up ip link set local up || true
 `)
 		}
 
 		for i, r := range router.Configuration.Loopback.Addresses {
 			config[fmt.Sprintf("user.internet.router.loopback.address.%d", i)] = r.String()
 			if router.Tier >= 1 && router.Tier <= 3 {
-				interfaces += fmt.Sprintf("    post-up ip -6 addr add dev local %s/128\n", r.String())
+				interfaces += fmt.Sprintf("    post-up ip -6 addr add dev local %s/128 || true\n", r.String())
 			}
 		}
 
 		for i, r := range router.Configuration.Loopback.Routes {
 			config[fmt.Sprintf("user.internet.router.loopback.route.%d.subnet", i)] = r.Subnet.String()
 			if router.Tier >= 1 && router.Tier <= 3 {
-				interfaces += fmt.Sprintf("    post-up ip -6 route add dev local %s\n", r.Subnet.String())
+				interfaces += fmt.Sprintf("    post-up sleep 10 ; ip -6 route add dev local %s || true\n", r.Subnet.String())
 			}
 		}
 
@@ -155,8 +155,8 @@ router bgp %d
 					interfaces += fmt.Sprintf(`
 auto %s
 iface %s inet6 manual
-    post-up tc qdisc add dev %s root netem delay %dms
-    post-up tc qdisc add dev %s root netem rate %dmbit
+    post-up tc qdisc add dev %s root netem delay %dms || true
+    post-up tc qdisc add dev %s root netem rate %dmbit || true
 `, p.Interface, p.Interface, p.Interface, p.Delay, p.Interface, p.Speed)
 
 					if p.ASN != 0 {
@@ -183,11 +183,11 @@ iface %s inet6 manual
 						if r.Gateway != nil {
 							config[fmt.Sprintf("user.internet.peer.%s.route.%d.gateway", p.Name, i)] = r.Gateway.String()
 							if router.Tier >= 1 && router.Tier <= 3 {
-								interfaces += fmt.Sprintf("    post-up ip -6 route add dev %s %s via %s\n", p.Interface, r.Subnet.String(), r.Gateway.String())
+								interfaces += fmt.Sprintf("    post-up sleep 10 ; ip -6 route add dev %s %s via %s || true\n", p.Interface, r.Subnet.String(), r.Gateway.String())
 							}
 						} else {
 							if router.Tier >= 1 && router.Tier <= 3 {
-								interfaces += fmt.Sprintf("    post-up ip -6 route add dev %s %s via %s\n", p.Interface, r.Subnet.String(), p.Remote)
+								interfaces += fmt.Sprintf("    post-up sleep 10 ; ip -6 route add dev %s %s via %s || true\n", p.Interface, r.Subnet.String(), p.Remote)
 							}
 						}
 					}
