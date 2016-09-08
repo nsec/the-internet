@@ -14,20 +14,23 @@ work, so if you want to get the simulated latencies and speeds, you need
 to run a very recent kernel.
 
 # Starting the whole thing
-This tool is meant to be run on a machine or inside a container on whcih
+This tool is meant to be run on a machine or inside a container on which
 a LXD daemon is running.
 
+First build it with:
+ - go get -v -x github.com/nsec/the-internet
+
 Creating an Internet simulation is basically as simple as:
- - ./the-internet create <path>
- - ./the-internet start
+ - the-internet create \<path\>
+ - the-internet start
 
 Generate an html/js map of your Internet with:
- - ./the-internet generate-map <destination path>
+ - the-internet generate-map \<destination path\>
 
 You can stop the simulation with:
- - ./the-internet stop
+ - the-internet stop
 
 Or create a new one by calling the start command again.
 
 Finally, once you want it all off your disk, you can call:
- - ./the-internet destroy
+ - the-internet destroy
