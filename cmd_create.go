@@ -243,7 +243,7 @@ iface %s inet6 manual
 		}
 
 		// Create the container
-		resp, err := c.Init(router.Name, "local", "internet-router", &[]string{"internet-base"}, config, false)
+		resp, err := c.Init(router.Name, "local", "internet-router", &[]string{"internet-base"}, config, nil, false)
 		if err != nil {
 			logf("Failed to create container '%s': %s", router.Name, err)
 			return
