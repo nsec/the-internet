@@ -53,6 +53,16 @@ func cmdCreate(c *lxd.Client, args []string) error {
 	}
 	logf("New router image imported: %s", fp)
 
+	// Create the profile
+	_, err = c.ProfileConfig("internet-base")
+	if err != nil {
+		logf("Creating the profile")
+		err := c.ProfileCreate("internet-base")
+		if err != nil {
+			return err
+		}
+	}
+
 	// Helper function
 	createContainer := func(router *Router) {
 		defer wgBatch.Done()
