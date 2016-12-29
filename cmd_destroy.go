@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/lxc/lxd"
-	"github.com/lxc/lxd/shared"
+	"github.com/lxc/lxd/shared/api"
 )
 
 func cmdDestroy(c *lxd.Client, args []string) error {
@@ -37,7 +37,7 @@ func cmdDestroy(c *lxd.Client, args []string) error {
 		return err
 	}
 
-	containersMap := map[string]shared.ContainerInfo{}
+	containersMap := map[string]api.Container{}
 	for _, ctn := range containers {
 		containersMap[ctn.Name] = ctn
 	}

@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/lxc/lxd"
-	"github.com/lxc/lxd/shared"
 )
 
 var argAutoStart = flag.Bool("auto-start", false, "Start the simulation at boot time")
@@ -72,7 +71,7 @@ func cmdCreate(c *lxd.Client, args []string) error {
 
 		// Configuration
 		config := map[string]string{}
-		devices := shared.Devices{}
+		devices := map[string]map[string]string{}
 
 		config["user.internet.type"] = "router"
 		config["user.internet.organization"] = router.Organization
@@ -139,7 +138,7 @@ router bgp %d
 		if router.Peers != nil {
 			for _, p := range router.Peers {
 				if strings.HasPrefix(p.Interface, "v") {
-					device := shared.Device{
+					device := map[string]string{
 						"type":    "nic",
 						"nictype": "physical",
 						"name":    p.Interface,
@@ -148,7 +147,7 @@ router bgp %d
 					}
 					devices[p.Interface] = device
 				} else if strings.HasPrefix(p.Interface, "br") {
-					device := shared.Device{
+					device := map[string]string{
 						"type":    "nic",
 						"nictype": "bridged",
 						"name":    p.Interface,
@@ -243,7 +242,7 @@ iface %s inet6 manual
 				ct.Config[k] = v
 			}
 
-			err = c.UpdateContainerConfig(router.Name, ct.Brief())
+			err = c.UpdateContainerConfig(router.Name, ct.Writable())
 			if err != nil {
 				logf("Failed to configure container '%s': %s", router.Name, err)
 				return
@@ -276,7 +275,7 @@ iface %s inet6 manual
 			ct.Devices[k] = v
 		}
 
-		err = c.UpdateContainerConfig(router.Name, ct.Brief())
+		err = c.UpdateContainerConfig(router.Name, ct.Writable())
 		if err != nil {
 			logf("Failed to configure container '%s': %s", router.Name, err)
 			return
