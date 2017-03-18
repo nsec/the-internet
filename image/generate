@@ -1,4 +1,4 @@
-VERSION="2016.02"
+VERSION="2017.02"
 
 # Cleanup
 rm -Rf image-rootfs.tar.xz image-meta.tar.xz build/
@@ -7,11 +7,12 @@ mkdir -p build/
 # Download
 wget https://buildroot.org/downloads/buildroot-${VERSION}.tar.bz2 -q -O - \
     | tar jxvf - --strip-components=1 -C build/
+cp configs/nsec_defconfig build/configs/
 
 # Build
 cd build/
-patch -p0 < ../quagga.patch
-make BR2_EXTERNAL=../ nsec_defconfig
+export the_internet="../"
+make the_internet=../ nsec_defconfig
 make BR2_JLEVEL=$(nproc)
 
 cp -R ../templates .
