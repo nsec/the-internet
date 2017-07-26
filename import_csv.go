@@ -125,7 +125,7 @@ func importFromCSV(path string) (Routers, error) {
 		router.Configuration.Loopback = &RouterInterface{
 			Addresses: []net.IP{netLocal},
 			Routes: []RouterInterfaceRoute{
-				RouterInterfaceRoute{Subnet: netSubnet}}}
+				{Subnet: netSubnet}}}
 
 		// Quagga
 		routerid := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", rand.Int31n(223), rand.Int31n(255), rand.Int31n(255), rand.Int31n(255)))
@@ -174,7 +174,7 @@ func importFromCSV(path string) (Routers, error) {
 
 		router.Configuration.Loopback = &RouterInterface{
 			Routes: []RouterInterfaceRoute{
-				RouterInterfaceRoute{Subnet: netSubnet}}}
+				{Subnet: netSubnet}}}
 
 		routers[router.Name] = &router
 	}

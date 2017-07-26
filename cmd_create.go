@@ -3,15 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 
-	"github.com/lxc/lxd"
+	"github.com/lxc/lxd/client"
+	"github.com/lxc/lxd/shared/api"
 )
 
 var argAutoStart = flag.Bool("auto-start", false, "Start the simulation at boot time")
 
-func cmdCreate(c *lxd.Client, args []string) error {
+func cmdCreate(c lxd.ContainerServer, args []string) error {
 	var wgBatch sync.WaitGroup
 
 	// A path must be provided
@@ -35,10 +37,15 @@ func cmdCreate(c *lxd.Client, args []string) error {
 	}
 
 	// Clear any existing images
-	fp := c.GetAlias("internet-router")
-	if fp != "" {
-		logf("Deleting the existing router image: %s", fp)
-		err = c.DeleteImage(fp)
+	alias, _, err := c.GetImageAlias("internet-router")
+	if err == nil {
+		logf("Deleting the existing router image: %s", alias.Target)
+		op, err := c.DeleteImage(alias.Target)
+		if err != nil {
+			return err
+		}
+
+		err = op.Wait()
 		if err != nil {
 			return err
 		}
@@ -46,17 +53,61 @@ func cmdCreate(c *lxd.Client, args []string) error {
 
 	// Load the image
 	logf("Importing the router image")
-	_, err = c.PostImage("image/image-meta.tar.xz", "image/image-rootfs.tar.xz", nil, false, []string{"internet-router"}, nil)
+
+	meta, err := os.Open("image/image-meta.tar.xz")
 	if err != nil {
 		return err
 	}
-	logf("New router image imported: %s", fp)
+	defer meta.Close()
+
+	rootfs, err := os.Open("image/image-rootfs.tar.xz")
+	if err != nil {
+		return err
+	}
+	defer rootfs.Close()
+
+	imgArgs := &lxd.ImageCreateArgs{
+		MetaFile:   meta,
+		MetaName:   "image-meta.tar.xz",
+		RootfsFile: rootfs,
+		RootfsName: "image-rootfs.tar.xz",
+	}
+
+	image := api.ImagesPost{}
+	image.Filename = imgArgs.MetaName
+
+	op, err := c.CreateImage(image, imgArgs)
+	if err != nil {
+		return err
+	}
+
+	err = op.Wait()
+	if err != nil {
+		return err
+	}
+
+	fingerprint := op.Metadata["fingerprint"].(string)
+
+	newAlias := api.ImageAliasesPost{}
+	newAlias.Name = "internet-router"
+	newAlias.Target = fingerprint
+
+	err = c.CreateImageAlias(newAlias)
+	if err != nil {
+		return err
+	}
+
+	logf("New router image imported: %s", fingerprint)
 
 	// Create the profile
-	_, err = c.ProfileConfig("internet-base")
+	_, _, err = c.GetProfile("internet-base")
 	if err != nil {
 		logf("Creating the profile")
-		err := c.ProfileCreate("internet-base")
+
+		req := api.ProfilesPost{}
+		req.Name = "internet-base"
+
+		err := c.CreateProfile(req)
 		if err != nil {
 			return err
 		}
@@ -226,13 +277,13 @@ iface %s inet6 manual
 
 		// Config-only containers
 		if router.Tier > 3 {
-			ct, err := c.ContainerInfo(router.Name)
+			ct, etag, err := c.GetContainer(router.Name)
 			if err != nil {
 				logf("Failed to configure container '%s': %s", router.Name, err)
 				return
 			}
 
-			for k, _ := range ct.Config {
+			for k := range ct.Config {
 				if strings.HasPrefix(k, "user.internet.") {
 					delete(ct.Config, k)
 				}
@@ -242,7 +293,13 @@ iface %s inet6 manual
 				ct.Config[k] = v
 			}
 
-			err = c.UpdateContainerConfig(router.Name, ct.Writable())
+			op, err := c.UpdateContainer(router.Name, ct.Writable(), etag)
+			if err != nil {
+				logf("Failed to configure container '%s': %s", router.Name, err)
+				return
+			}
+
+			err = op.Wait()
 			if err != nil {
 				logf("Failed to configure container '%s': %s", router.Name, err)
 				return
@@ -252,20 +309,32 @@ iface %s inet6 manual
 		}
 
 		// Create the container
-		resp, err := c.Init(router.Name, "local", "internet-router", &[]string{"internet-base"}, config, nil, false)
+		imgInfo, _, err := c.GetImage(fingerprint)
 		if err != nil {
 			logf("Failed to create container '%s': %s", router.Name, err)
 			return
 		}
 
-		err = c.WaitForSuccess(resp.Operation)
+		req := api.ContainersPost{
+			Name: router.Name,
+		}
+		req.Profiles = []string{"internet-base"}
+		req.Config = config
+
+		rop, err := c.CreateContainerFromImage(c, *imgInfo, req)
+		if err != nil {
+			logf("Failed to create container '%s': %s", router.Name, err)
+			return
+		}
+
+		err = rop.Wait()
 		if err != nil {
 			logf("Failed to create container '%s': %s", router.Name, err)
 			return
 		}
 
 		// Setup the devices
-		ct, err := c.ContainerInfo(router.Name)
+		ct, etag, err := c.GetContainer(router.Name)
 		if err != nil {
 			logf("Failed to configure container '%s': %s", router.Name, err)
 			return
@@ -275,7 +344,13 @@ iface %s inet6 manual
 			ct.Devices[k] = v
 		}
 
-		err = c.UpdateContainerConfig(router.Name, ct.Writable())
+		op, err := c.UpdateContainer(router.Name, ct.Writable(), etag)
+		if err != nil {
+			logf("Failed to configure container '%s': %s", router.Name, err)
+			return
+		}
+
+		err = op.Wait()
 		if err != nil {
 			logf("Failed to configure container '%s': %s", router.Name, err)
 			return

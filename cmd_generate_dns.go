@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lxc/lxd"
+	"github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared"
 )
 
-func cmdGenerateDNS(c *lxd.Client, args []string) error {
+func cmdGenerateDNS(c lxd.ContainerServer, args []string) error {
 	// A path must be provided
 	if len(args) < 1 {
 		return fmt.Errorf("A format must be provided (samba4 or bind9).")

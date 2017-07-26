@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/lxc/lxd"
+	"github.com/lxc/lxd/client"
 )
 
-func cmdStatus(c *lxd.Client, args []string) error {
+func cmdStatus(c lxd.ContainerServer, args []string) error {
 	// Load the simulation
 	routers, err := importFromLXD(c)
 	if err != nil {

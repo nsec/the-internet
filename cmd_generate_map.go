@@ -1,9 +1,11 @@
 package main
 
 import (
-	"github.com/lxc/lxd"
+	"fmt"
+
+	"github.com/lxc/lxd/client"
 )
 
-func cmdGenerateMap(c *lxd.Client, args []string) error {
-	return nil
+func cmdGenerateMap(c lxd.ContainerServer, args []string) error {
+	return fmt.Errorf("Not implemented")
 }

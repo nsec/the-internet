@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/lxc/lxd"
+	"github.com/lxc/lxd/client"
 )
 
 func main() {
@@ -40,7 +40,7 @@ func run() error {
 	flag.Parse()
 
 	// Connect to LXD
-	c, err := lxd.NewClient(&lxd.DefaultConfig, "local")
+	c, err := lxd.ConnectLXDUnix("", nil)
 	if err != nil {
 		return err
 	}

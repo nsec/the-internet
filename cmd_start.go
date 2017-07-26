@@ -5,10 +5,11 @@ import (
 	"os"
 	"sync"
 
-	"github.com/lxc/lxd"
+	"github.com/lxc/lxd/client"
+	"github.com/lxc/lxd/shared/api"
 )
 
-func cmdStart(c *lxd.Client, args []string) error {
+func cmdStart(c lxd.ContainerServer, args []string) error {
 	var wgBatch sync.WaitGroup
 
 	if os.Getuid() != 0 {
@@ -41,15 +42,20 @@ func cmdStart(c *lxd.Client, args []string) error {
 	startContainer := func(name string) {
 		defer wgBatch.Done()
 
-		resp, err := c.Action(name, "start", -1, false, false)
+		req := api.ContainerStatePut{
+			Action:  "start",
+			Timeout: -1,
+		}
+
+		op, err := c.UpdateContainerState(name, req, "")
 		if err != nil {
-			logf("Failed to start container '%s': %s", name, err)
+			logf("Failed to start container: %s: %s", name, err)
 			return
 		}
 
-		err = c.WaitForSuccess(resp.Operation)
+		err = op.Wait()
 		if err != nil {
-			logf("Failed to start container '%s': %s", name, err)
+			logf("Failed to start container: %s: %s", name, err)
 			return
 		}
 	}
