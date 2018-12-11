@@ -86,7 +86,7 @@ func cmdCreate(c lxd.ContainerServer, args []string) error {
 		return err
 	}
 
-	fingerprint := op.Metadata["fingerprint"].(string)
+	fingerprint := op.Get().Metadata["fingerprint"].(string)
 
 	newAlias := api.ImageAliasesPost{}
 	newAlias.Name = "internet-router"
